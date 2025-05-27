@@ -15,7 +15,7 @@ A Home Assistant integration to monitor Ennatuurlijk disruptions for a specified
 
 ## Features
 - Monitors current, planned, and solved disruptions from https://ennatuurlijk.nl/storingen.
-- Matches disruptions by town or postal code (full or partial, e.g., 4105 for 4105TK).
+- Matches disruptions by town or postal code (full or partial, e.g., 5703 for 5703TK).
 - Updates every hour.
 - Supports multiple disruptions per category, with each disruption's description and date available as attributes.
 
