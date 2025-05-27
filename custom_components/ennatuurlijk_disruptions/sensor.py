@@ -96,6 +96,7 @@ def matches_location(title, town, postal_code, postal_code_partial):
     return match
 
 def extract_date(disruption, date_pattern):
+    import re
     expectation = disruption.find("div", class_="expectation")
     if not expectation:
         _LOGGER.debug("No expectation div found in disruption")
@@ -103,6 +104,18 @@ def extract_date(disruption, date_pattern):
     value = expectation.find("div", class_="value")
     date = value.get_text(strip=True) if value else ""
     match = date and re.match(date_pattern, date, re.IGNORECASE)
+    if match:
+        # Convert Dutch month names to numbers
+        months = {
+            "januari": "01", "februari": "02", "maart": "03", "april": "04", "mei": "05", "juni": "06",
+            "juli": "07", "augustus": "08", "september": "09", "oktober": "10", "november": "11", "december": "12"
+        }
+        m = re.match(r"(\d{1,2})\s+([a-z]+)\s+(\d{4})", date, re.IGNORECASE)
+        if m:
+            day = m.group(1).zfill(2)
+            month = months.get(m.group(2).lower(), "01")
+            year = m.group(3)
+            return f"{day}-{month}-{year}"
     _LOGGER.debug("Extracted date from disruption: %s, matches pattern: %s", date, match)
     return date if match else ""
 
