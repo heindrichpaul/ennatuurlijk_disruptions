@@ -1,8 +1,8 @@
 {
   "domain": "ennatuurlijk_disruptions",
   "name": "Ennatuurlijk Disruptions",
-  "config_flow": true,
   "codeowners": ["@heindrichpaul"],
+  "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/heindrichpaul/ennatuurlijk_disruptions",
   "iot_class": "cloud_polling",
