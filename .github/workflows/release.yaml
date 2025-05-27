@@ -24,15 +24,15 @@ jobs:
           VERSION=$(jq -r .version custom_components/ennatuurlijk_disruptions/manifest.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create zip archive
+      - name: Create HACS-style zip archive
         run: |
-          zip -r ennatuurlijk_disruptions-${{ steps.get_version.outputs.version }}.zip custom_components/ennatuurlijk_disruptions
+          zip -r ennatuurlijk_disruptions.zip ennatuurlijk_disruptions
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
           name: Release v${{ steps.get_version.outputs.version }}
-          files: ennatuurlijk_disruptions-${{ steps.get_version.outputs.version }}.zip
+          files: ennatuurlijk_disruptions.zip
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
