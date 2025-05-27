@@ -12,13 +12,9 @@
             }
         }
     },
-    "translations": {
-        "nl": {
-            "main_sensor": "Ennatuurlijk Storingen",
-            "planned_sensor": "Geplande storing",
-            "current_sensor": "Actuele storing",
-            "solved_sensor": "Opgeloste storing",
-            "details_sensor": "Storing details"
-        }
-    }
+    "main_sensor": "Ennatuurlijk Storingen",
+    "planned_sensor": "Geplande storing",
+    "current_sensor": "Actuele storing",
+    "solved_sensor": "Opgeloste storing",
+    "details_sensor": "Storing details"
 }
