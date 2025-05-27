@@ -191,7 +191,7 @@ class EnnatuurlijkSensor(SensorEntity):
         self._entry_id = entry.entry_id
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}"
         self._attr_icon = "mdi:alert"
-        self._attr_name = DOMAIN  # Uses entity.sensor.ennatuurlijk_disruptions.name
+        self._attr_translation_key = "ennatuurlijk_disruptions"  # Uses integration name for translation
         _LOGGER.debug("Initialized EnnatuurlijkSensor with unique_id: %s", self._attr_unique_id)
 
     @property
@@ -217,7 +217,7 @@ class EnnatuurlijkPlannedSensor(SensorEntity):
         self._entry_id = entry.entry_id
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_planned"
         self._attr_icon = "mdi:calendar-alert"
-        self._attr_name = "planned"  # Uses entity.sensor.ennatuurlijk_disruptions.planned.name
+        self._attr_translation_key = "ennatuurlijk_disruptions_planned"
 
     @property
     def state(self):
@@ -238,7 +238,7 @@ class EnnatuurlijkCurrentSensor(SensorEntity):
         self._entry_id = entry.entry_id
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_current"
         self._attr_icon = "mdi:alert-circle"
-        self._attr_name = "current"  # Uses entity.sensor.ennatuurlijk_disruptions.current.name
+        self._attr_translation_key = "ennatuurlijk_disruptions_current"
 
     @property
     def state(self):
@@ -259,7 +259,7 @@ class EnnatuurlijkSolvedSensor(SensorEntity):
         self._entry_id = entry.entry_id
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_solved"
         self._attr_icon = "mdi:check-circle"
-        self._attr_name = "solved"  # Uses entity.sensor.ennatuurlijk_disruptions.solved.name
+        self._attr_translation_key = "ennatuurlijk_disruptions_solved"
 
     @property
     def state(self):
@@ -280,7 +280,7 @@ class EnnatuurlijkDetailsSensor(SensorEntity):
         self._entry_id = entry.entry_id
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_details"
         self._attr_icon = "mdi:text"
-        self._attr_name = "details"  # Uses entity.sensor.ennatuurlijk_disruptions.details.name
+        self._attr_translation_key = "ennatuurlijk_disruptions_details"
 
     @property
     def state(self):
