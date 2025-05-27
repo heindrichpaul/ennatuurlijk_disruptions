@@ -72,4 +72,4 @@ postal_code: "<your postal code>"
 - For multiple disruptions, all are listed in the `dates` attribute for each category sensor.
 
 ## Version
-- Integration version: 0.9.0
+- Integration version: 0.9.2
