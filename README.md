@@ -1,4 +1,6 @@
 # Ennatuurlijk Disruptions Integration
+[![HACS Validation](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hacs.yaml/badge.svg)](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hacs.yaml)
+
 
 A Home Assistant integration to monitor Ennatuurlijk disruptions for a specified town or postal code.
 
