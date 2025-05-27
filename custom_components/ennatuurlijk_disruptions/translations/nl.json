@@ -12,13 +12,23 @@
             }
         }
     },
-    "translations": {
-        "nl": {
-            "main_sensor": "Ennatuurlijk Storingen",
-            "planned_sensor": "Geplande storing",
-            "current_sensor": "Actuele storing",
-            "solved_sensor": "Opgeloste storing",
-            "details_sensor": "Storing details"
+    "entity": {
+        "sensor": {
+            "ennatuurlijk_disruptions": {
+                "name": "Ennatuurlijk Storingen"
+            },
+            "ennatuurlijk_planned_disruption": {
+                "name": "Geplande storing"
+            },
+            "ennatuurlijk_current_disruption": {
+                "name": "Actuele storing"
+            },
+            "ennatuurlijk_solved_disruption": {
+                "name": "Opgeloste storing"
+            },
+            "ennatuurlijk_disruption_details": {
+                "name": "Storing details"
+            }
         }
     }
 }
