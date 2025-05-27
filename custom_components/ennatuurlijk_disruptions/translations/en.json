@@ -11,5 +11,14 @@
                 }
             }
         }
+    },
+    "translations": {
+        "en": {
+            "main_sensor": "Ennatuurlijk Disruptions",
+            "planned_sensor": "Planned disruption",
+            "current_sensor": "Current disruption",
+            "solved_sensor": "Solved disruption",
+            "details_sensor": "Disruption details"
+        }
     }
 }
