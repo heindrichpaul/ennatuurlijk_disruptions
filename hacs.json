@@ -1,6 +1,9 @@
 {
     "name": "Ennatuurlijk Disruptions",
     "content_in_root": false,
+    "zip_release": true,
+    "version": "0.1.0",
+    "filename": "ennatuurlijk_disruptions.zip",
     "country": "NL",
     "render_readme": true,
     "homeassistant": "2023.3.0"
