@@ -16,18 +16,10 @@
         "sensor": {
             "ennatuurlijk_disruptions": {
                 "name": "Ennatuurlijk Disruptions",
-                "planned": {
-                    "name": "Planned disruption"
-                },
-                "current": {
-                    "name": "Current disruption"
-                },
-                "solved": {
-                    "name": "Solved disruption"
-                },
-                "details": {
-                    "name": "Disruption details"
-                }
+                "planned_name": "Planned disruption",
+                "current_name": "Current disruption",
+                "solved_name": "Solved disruption",
+                "details_name": "Disruption details"
             }
         }
     }

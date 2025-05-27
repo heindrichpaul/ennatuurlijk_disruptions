@@ -16,18 +16,10 @@
         "sensor": {
             "ennatuurlijk_disruptions": {
                 "name": "Ennatuurlijk Storingen",
-                "planned": {
-                    "name": "Geplande storing"
-                },
-                "current": {
-                    "name": "Huidige storing"
-                },
-                "solved": {
-                    "name": "Opgeloste storing"
-                },
-                "details": {
-                    "name": "Storing details"
-                }
+                "planned_name": "Geplande storing",
+                "current_name": "Huidige storing",
+                "solved_name": "Opgeloste storing",
+                "details_name": "Storing details"
             }
         }
     }
