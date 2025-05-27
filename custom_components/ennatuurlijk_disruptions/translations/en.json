@@ -15,19 +15,19 @@
     "entity": {
         "sensor": {
             "ennatuurlijk_disruptions": {
-                "name": "Ennatuurlijk Disruptions"
-            },
-            "ennatuurlijk_planned_disruption": {
-                "name": "Planned disruption"
-            },
-            "ennatuurlijk_current_disruption": {
-                "name": "Current disruption"
-            },
-            "ennatuurlijk_solved_disruption": {
-                "name": "Solved disruption"
-            },
-            "ennatuurlijk_disruption_details": {
-                "name": "Disruption details"
+                "name": "Ennatuurlijk Disruptions",
+                "planned": {
+                    "name": "Planned disruption"
+                },
+                "current": {
+                    "name": "Current disruption"
+                },
+                "solved": {
+                    "name": "Solved disruption"
+                },
+                "details": {
+                    "name": "Disruption details"
+                }
             }
         }
     }

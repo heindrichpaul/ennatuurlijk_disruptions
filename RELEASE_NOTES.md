@@ -1,3 +1,16 @@
+## v1.0.4 Release Notes
+
+### Bugfixes
+- Entity display names are now correctly translated in both English and Dutch, using Home Assistant's entity translation system.
+- Updated sensor code to use `_attr_name` for proper translation key matching.
+- Dutch translation file structure updated for consistency with English.
+
+### Improvements
+- Documentation and translation best practices clarified.
+- No breaking changes; update is safe for all users.
+
+---
+
 ## v1.0.3 Release Notes
 
 ### Maintenance

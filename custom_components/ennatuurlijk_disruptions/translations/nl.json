@@ -15,19 +15,19 @@
     "entity": {
         "sensor": {
             "ennatuurlijk_disruptions": {
-                "name": "Ennatuurlijk Storingen"
-            },
-            "ennatuurlijk_planned_disruption": {
-                "name": "Geplande storing"
-            },
-            "ennatuurlijk_current_disruption": {
-                "name": "Actuele storing"
-            },
-            "ennatuurlijk_solved_disruption": {
-                "name": "Opgeloste storing"
-            },
-            "ennatuurlijk_disruption_details": {
-                "name": "Storing details"
+                "name": "Ennatuurlijk Storingen",
+                "planned": {
+                    "name": "Geplande storing"
+                },
+                "current": {
+                    "name": "Huidige storing"
+                },
+                "solved": {
+                    "name": "Opgeloste storing"
+                },
+                "details": {
+                    "name": "Storing details"
+                }
             }
         }
     }
