@@ -1,0 +1,15 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Ennatuurlijk Disruptions Setup",
+                "description": "Enter your town and postal code to monitor Ennatuurlijk disruptions.",
+                "data": {
+                    "name": "Name",
+                    "town": "Town",
+                    "postal_code": "Postal Code"
+                }
+            }
+        }
+    }
+}
