@@ -1,5 +1,6 @@
 # Ennatuurlijk Disruptions Integration
 [![HACS Validation](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hacs.yaml/badge.svg)](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hacs.yaml)
+[![Validate with hassfest](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hassfest.yaml)
 
 A Home Assistant integration to monitor Ennatuurlijk disruptions for a specified town or postal code.
 
@@ -34,9 +35,9 @@ planned:
   state: true
   dates:
     - description: "Example planned disruption 1"
-      date: "23 mei 2025"
+      date: "23-05-2025"
     - description: "Example planned disruption 2"
-      date: "23 mei 2025"
+      date: "23-05-2025"
 current:
   state: false
   dates: []
@@ -44,20 +45,20 @@ solved:
   state: true
   dates:
     - description: "Example solved disruption"
-      date: "22 mei 2025"
+      date: "22-05-2025"
 details: |
-  Planned disruption: Example planned disruption 1 (23 mei 2025)
-  Planned disruption: Example planned disruption 2 (23 mei 2025)
-  Solved disruption: Example solved disruption (22 mei 2025)
+  Planned disruption: Example planned disruption 1 (23-05-2025)
+  Planned disruption: Example planned disruption 2 (23-05-2025)
+  Solved disruption: Example solved disruption (22-05-2025)
 disruptions:
   - title: "Example planned disruption 1"
-    date: "23 mei 2025"
+    date: "23-05-2025"
     status: planned
   - title: "Example planned disruption 2"
-    date: "23 mei 2025"
+    date: "23-05-2025"
     status: planned
   - title: "Example solved disruption"
-    date: "22 mei 2025"
+    date: "22-05-2025"
     status: solved
 town: "<your town>"
 postal_code: "<your postal code>"
@@ -72,4 +73,4 @@ postal_code: "<your postal code>"
 - For multiple disruptions, all are listed in the `dates` attribute for each category sensor.
 
 ## Version
-- Integration version: 0.9.2
+- Integration version: 1.0.0
