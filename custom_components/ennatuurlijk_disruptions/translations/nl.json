@@ -17,16 +17,16 @@
             "ennatuurlijk_disruptions": {
                 "name": "Ennatuurlijk Storingen"
             },
-            "ennatuurlijk_planned_disruption": {
+            "ennatuurlijk_disruptions_planned": {
                 "name": "Geplande storing"
             },
-            "ennatuurlijk_current_disruption": {
-                "name": "Actuele storing"
+            "ennatuurlijk_disruptions_current": {
+                "name": "Huidige storing"
             },
-            "ennatuurlijk_solved_disruption": {
+            "ennatuurlijk_disruptions_solved": {
                 "name": "Opgeloste storing"
             },
-            "ennatuurlijk_disruption_details": {
+            "ennatuurlijk_disruptions_details": {
                 "name": "Storing details"
             }
         }

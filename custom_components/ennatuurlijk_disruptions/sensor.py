@@ -184,43 +184,14 @@ def parse_disruptions(soup, town, postal_code):
     _LOGGER.debug("Final parsed result: %s", result)
     return result
 
-# Add translation keys for sensor names
-SENSOR_DESCRIPTIONS = {
-    "main": EntityDescription(
-        key="main",
-        name="sensor.ennatuurlijk_disruptions",
-        translation_key="main_sensor"
-    ),
-    "planned": EntityDescription(
-        key="planned",
-        name="sensor.ennatuurlijk_planned_disruption",
-        translation_key="planned_sensor"
-    ),
-    "current": EntityDescription(
-        key="current",
-        name="sensor.ennatuurlijk_current_disruption",
-        translation_key="current_sensor"
-    ),
-    "solved": EntityDescription(
-        key="solved",
-        name="sensor.ennatuurlijk_solved_disruption",
-        translation_key="solved_sensor"
-    ),
-    "details": EntityDescription(
-        key="details",
-        name="sensor.ennatuurlijk_disruption_details",
-        translation_key="details_sensor"
-    ),
-}
-
 class EnnatuurlijkSensor(SensorEntity):
     def __init__(self, coordinator, entry):
         super().__init__()
         self.coordinator = coordinator
         self._entry_id = entry.entry_id
-        self.entity_description = SENSOR_DESCRIPTIONS["main"]
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}"
         self._attr_icon = "mdi:alert"
+        self._attr_translation_key = "ennatuurlijk_disruptions"  # Uses integration name for translation
         _LOGGER.debug("Initialized EnnatuurlijkSensor with unique_id: %s", self._attr_unique_id)
 
     @property
@@ -244,9 +215,9 @@ class EnnatuurlijkPlannedSensor(SensorEntity):
         super().__init__()
         self.coordinator = coordinator
         self._entry_id = entry.entry_id
-        self.entity_description = SENSOR_DESCRIPTIONS["planned"]
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_planned"
         self._attr_icon = "mdi:calendar-alert"
+        self._attr_translation_key = "ennatuurlijk_disruptions_planned"
 
     @property
     def state(self):
@@ -265,9 +236,9 @@ class EnnatuurlijkCurrentSensor(SensorEntity):
         super().__init__()
         self.coordinator = coordinator
         self._entry_id = entry.entry_id
-        self.entity_description = SENSOR_DESCRIPTIONS["current"]
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_current"
         self._attr_icon = "mdi:alert-circle"
+        self._attr_translation_key = "ennatuurlijk_disruptions_current"
 
     @property
     def state(self):
@@ -286,9 +257,9 @@ class EnnatuurlijkSolvedSensor(SensorEntity):
         super().__init__()
         self.coordinator = coordinator
         self._entry_id = entry.entry_id
-        self.entity_description = SENSOR_DESCRIPTIONS["solved"]
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_solved"
         self._attr_icon = "mdi:check-circle"
+        self._attr_translation_key = "ennatuurlijk_disruptions_solved"
 
     @property
     def state(self):
@@ -307,9 +278,9 @@ class EnnatuurlijkDetailsSensor(SensorEntity):
         super().__init__()
         self.coordinator = coordinator
         self._entry_id = entry.entry_id
-        self.entity_description = SENSOR_DESCRIPTIONS["details"]
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_details"
         self._attr_icon = "mdi:text"
+        self._attr_translation_key = "ennatuurlijk_disruptions_details"
 
     @property
     def state(self):

@@ -30,11 +30,20 @@ jobs:
           zip -r ../../ennatuurlijk_disruptions.zip .
           cd ../../
 
+      - name: Read release notes
+        id: notes
+        run: |
+          RELEASE_NOTES=$(awk '/^## v${{ steps.get_version.outputs.version }} Release Notes/,/^## v/{if (!/^## v/ || NR==1) print}' RELEASE_NOTES.md | sed '/^## v[0-9]/d')
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$RELEASE_NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
           name: Release v${{ steps.get_version.outputs.version }}
+          body: ${{ steps.notes.outputs.release_notes }}
           files: ennatuurlijk_disruptions.zip
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
