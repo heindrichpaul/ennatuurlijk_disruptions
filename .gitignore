@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env
+.venv
+venv/
+ENV/
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# HACS/HA
+*.log
+*.db
+home-assistant_v2.db
+secrets.yaml
+
+# Zip/Release Artifacts
+ennatuurlijk_disruptions.zip
+
+# Node/npm (if ever used)
+node_modules/
+
+# Test/coverage
+.coverage
+htmlcov/
+
+# GitHub Actions
+.github/workflows/*.log
