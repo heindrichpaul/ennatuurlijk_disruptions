@@ -1,3 +1,11 @@
+## v1.0.3 Release Notes
+
+### Maintenance
+- Translation files (en.json, nl.json) are now fully flat and validated for Home Assistant requirements.
+- No functional changes, but improved compatibility and validation for HACS and Home Assistant.
+
+---
+
 ## v1.0.2 Release Notes
 
 ### Features
