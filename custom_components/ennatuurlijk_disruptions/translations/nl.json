@@ -1,0 +1,15 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Ennatuurlijk Storingen Instellen",
+                "description": "Voer uw woonplaats en postcode in om Ennatuurlijk-storingen te monitoren.",
+                "data": {
+                    "name": "Naam",
+                    "town": "Plaats",
+                    "postal_code": "Postcode"
+                }
+            }
+        }
+    }
+}
