@@ -12,9 +12,23 @@
             }
         }
     },
-    "main_sensor": "Ennatuurlijk Disruptions",
-    "planned_sensor": "Planned disruption",
-    "current_sensor": "Current disruption",
-    "solved_sensor": "Solved disruption",
-    "details_sensor": "Disruption details"
+    "entity": {
+        "sensor": {
+            "ennatuurlijk_disruptions": {
+                "name": "Ennatuurlijk Disruptions"
+            },
+            "ennatuurlijk_planned_disruption": {
+                "name": "Planned disruption"
+            },
+            "ennatuurlijk_current_disruption": {
+                "name": "Current disruption"
+            },
+            "ennatuurlijk_solved_disruption": {
+                "name": "Solved disruption"
+            },
+            "ennatuurlijk_disruption_details": {
+                "name": "Disruption details"
+            }
+        }
+    }
 }
