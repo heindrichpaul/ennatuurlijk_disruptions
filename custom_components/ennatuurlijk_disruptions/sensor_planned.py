@@ -1,8 +1,7 @@
 from homeassistant.components.sensor import SensorEntity # type: ignore
-from homeassistant.const import Platform
+
 from .const import _LOGGER, DOMAIN, ATTR_ERROR, ATTR_FRIENDLY_NAME, ATTR_YEAR_MONTH_DAY_DATE, ATTR_LAST_UPDATE, ATTR_DAYS_UNTIL_PLANNED_DATE, ATTR_IS_PLANNED_DATE_TODAY
-from .fetch import fetch_disruption_section
-from datetime import datetime, timedelta
+from datetime import datetime
 
 class EnnatuurlijkPlannedSensor(SensorEntity):
     def __init__(self, coordinator, entry, days_to_keep_solved=7):
@@ -21,6 +20,7 @@ class EnnatuurlijkPlannedSensor(SensorEntity):
         dates = [d["date"] for d in planned.get("dates", []) if d.get("date")]
         future_dates = [d for d in dates if datetime.strptime(d, "%d-%m-%Y").date() >= today]
         closest_date = min((datetime.strptime(d, "%d-%m-%Y").date() for d in future_dates), default=None)
+        _LOGGER.debug(f"[{self._attr_unique_id}] State computed: {closest_date.strftime('%Y-%m-%d') if closest_date else None}")
         return closest_date.strftime("%Y-%m-%d") if closest_date else None
 
     @property
@@ -37,7 +37,7 @@ class EnnatuurlijkPlannedSensor(SensorEntity):
         last_update = None
         if hasattr(self.coordinator, "last_update_success") and self.coordinator.last_update_success:
             last_update = self.coordinator.last_update_success.strftime("%d-%m-%Y %H:%M")
-        return {
+        attrs = {
             ATTR_ERROR: False,
             ATTR_FRIENDLY_NAME: self.name,
             ATTR_YEAR_MONTH_DAY_DATE: closest_date.strftime("%Y-%m-%d") if closest_date else None,
@@ -47,6 +47,8 @@ class EnnatuurlijkPlannedSensor(SensorEntity):
             "dates": dates,
             "icon": self.icon,
         }
+        _LOGGER.debug(f"[{self._attr_unique_id}] Attributes: {attrs}")
+        return attrs
 
 class EnnatuurlijkPlannedAlertSensor(SensorEntity):
     def __init__(self, coordinator, entry):
@@ -60,7 +62,9 @@ class EnnatuurlijkPlannedAlertSensor(SensorEntity):
     @property
     def state(self):
         planned = self.coordinator.data.get("planned", {})
-        return "on" if planned.get("state") else "off"
+        state = "on" if planned.get("state") else "off"
+        _LOGGER.debug(f"[{self._attr_unique_id}] State computed: {state}")
+        return state
 
     @property
     def extra_state_attributes(self):
@@ -68,10 +72,12 @@ class EnnatuurlijkPlannedAlertSensor(SensorEntity):
         last_update = None
         if hasattr(self.coordinator, "last_update_success") and self.coordinator.last_update_success:
             last_update = self.coordinator.last_update_success.strftime("%d-%m-%Y %H:%M")
-        return {
+        attrs = {
             ATTR_ERROR: False,
             ATTR_FRIENDLY_NAME: self.name,
             ATTR_LAST_UPDATE: last_update,
             "dates": planned.get("dates", []),
             "icon": self.icon,
         }
+        _LOGGER.debug(f"[{self._attr_unique_id}] Attributes: {attrs}")
+        return attrs
