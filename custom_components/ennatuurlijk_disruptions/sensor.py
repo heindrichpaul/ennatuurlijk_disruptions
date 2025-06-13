@@ -3,10 +3,10 @@ from bs4 import BeautifulSoup
 import re
 import logging
 from datetime import timedelta
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.helpers.entity import EntityDescription
-from homeassistant.const import Platform
+from homeassistant.components.sensor import SensorEntity # type: ignore
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator # type: ignore
+from homeassistant.helpers.entity import EntityDescription # type: ignore
+from homeassistant.const import Platform # type: ignore
 from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, SCAN_INTERVAL
 
 # Explicitly define the logger for the module

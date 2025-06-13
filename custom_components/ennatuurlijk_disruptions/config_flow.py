@@ -1,6 +1,6 @@
 import logging
-from homeassistant import config_entries
-from homeassistant.const import CONF_NAME
+from homeassistant import config_entries # type: ignore
+from homeassistant.const import CONF_NAME # type: ignore
 from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE
 import voluptuous as vol
 import re
