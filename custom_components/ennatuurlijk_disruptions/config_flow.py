@@ -1,11 +1,19 @@
-import logging
+#!/usr/bin/env python3
+"""
+Config flow component for Ennatuurlijk Disruptions
+Author: Heindrich Paul
+"""
+
 from homeassistant import config_entries # type: ignore
 from homeassistant.const import CONF_NAME # type: ignore
-from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE
+from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, _LOGGER
 import voluptuous as vol
 import re
 
-_LOGGER = logging.getLogger(__name__)
+DEFAULT_DAYS_TO_KEEP_SOLVED = 7
+CONF_DAYS_TO_KEEP_SOLVED = "days_to_keep_solved"
+CONF_CREATE_ALERT_SENSORS = "create_alert_sensors"
+DEFAULT_CREATE_ALERT_SENSORS = True
 
 class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -31,6 +39,10 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_NAME: user_input[CONF_NAME],
                         CONF_TOWN: user_input[CONF_TOWN],
                         CONF_POSTAL_CODE: user_input[CONF_POSTAL_CODE]
+                    },
+                    options={
+                        CONF_DAYS_TO_KEEP_SOLVED: user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
+                        CONF_CREATE_ALERT_SENSORS: user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
                     }
                 )
 
@@ -40,7 +52,9 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required(CONF_NAME, default="Ennatuurlijk Disruptions"): str,
                 vol.Required(CONF_TOWN): str,
-                vol.Required(CONF_POSTAL_CODE): str
+                vol.Required(CONF_POSTAL_CODE): str,
+                vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=DEFAULT_DAYS_TO_KEEP_SOLVED): int,
+                vol.Optional(CONF_CREATE_ALERT_SENSORS, default=DEFAULT_CREATE_ALERT_SENSORS): bool
             }),
             errors=errors
         )
@@ -74,6 +88,10 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_NAME: user_input[CONF_NAME],
                         CONF_TOWN: user_input[CONF_TOWN],
                         CONF_POSTAL_CODE: user_input[CONF_POSTAL_CODE]
+                    },
+                    options={
+                        CONF_DAYS_TO_KEEP_SOLVED: user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
+                        CONF_CREATE_ALERT_SENSORS: user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
                     }
                 )
 
@@ -84,7 +102,9 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required(CONF_NAME, default=config_entry.data.get(CONF_NAME, "Ennatuurlijk Disruptions")): str,
                 vol.Required(CONF_TOWN, default=config_entry.data.get(CONF_TOWN)): str,
-                vol.Required(CONF_POSTAL_CODE, default=config_entry.data.get(CONF_POSTAL_CODE)): str
+                vol.Required(CONF_POSTAL_CODE, default=config_entry.data.get(CONF_POSTAL_CODE)): str,
+                vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=config_entry.options.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)): int,
+                vol.Optional(CONF_CREATE_ALERT_SENSORS, default=config_entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)): bool
             }),
             errors=errors
         )

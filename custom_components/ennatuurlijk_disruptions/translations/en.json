@@ -9,6 +9,14 @@
                     "town": "Town",
                     "postal_code": "Postal Code"
                 }
+            },
+            "init": {
+                "title": "Ennatuurlijk Disruptions Options",
+                "description": "Configure additional options for Ennatuurlijk Disruptions.",
+                "data": {
+                    "create_alert_sensors": "Enable alert sensors (boolean sensors for planned, current, solved)",
+                    "solved_retention_days": "Number of days to keep solved disruptions"
+                }
             }
         }
     },
@@ -26,8 +34,14 @@
             "ennatuurlijk_disruptions_solved": {
                 "name": "Solved disruption"
             },
-            "ennatuurlijk_disruptions_details": {
-                "name": "Disruption details"
+            "ennatuurlijk_disruptions_planned_alert": {
+                "name": "Planned disruption alert"
+            },
+            "ennatuurlijk_disruptions_current_alert": {
+                "name": "Current disruption alert"
+            },
+            "ennatuurlijk_disruptions_solved_alert": {
+                "name": "Solved disruption alert"
             }
         }
     }
