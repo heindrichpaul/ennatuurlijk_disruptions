@@ -53,22 +53,34 @@
             "ennatuurlijk_disruptions_planned": {
                 "name": "Planned disruption",
                 "state_attributes": {
-                    "days_until_planned_date": "Days until the planned date",
-                    "is_planned_date_today": "Is today the planned date"
+                    "days_until_planned_date": {
+                        "name": "Days until the planned date"
+                    },
+                    "is_planned_date_today": {
+                        "name": "Is today the planned date"
+                    }
                 }
             },
             "ennatuurlijk_disruptions_current": {
                 "name": "Current disruption",
                 "state_attributes": {
-                    "days_since_current_date": "Days since the disruption date",
-                    "is_current_date_today": "Is today the disruption date"
+                    "days_since_current_date": {
+                        "name": "Days since the disruption date"
+                    },
+                    "is_current_date_today": {
+                        "name": "Is today the disruption date"
+                    }
                 }
             },
             "ennatuurlijk_disruptions_solved": {
                 "name": "Solved disruption",
                 "state_attributes": {
-                    "days_since_solved_date": "Days since the solved date",
-                    "is_solved_date_today": "Is today the solved date"
+                    "days_since_solved_date": {
+                        "name": "Days since the solved date"
+                    },
+                    "is_solved_date_today": {
+                        "name": "Is today the solved date"
+                    }
                 }
             },
             "ennatuurlijk_disruptions_planned_alert": {
