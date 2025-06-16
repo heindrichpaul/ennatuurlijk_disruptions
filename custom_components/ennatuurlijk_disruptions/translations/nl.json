@@ -3,11 +3,32 @@
         "step": {
             "user": {
                 "title": "Ennatuurlijk Storingen Instellen",
-                "description": "Voer uw woonplaats en postcode in om Ennatuurlijk-storingen te monitoren.",
+                "description": "Voer uw woonplaats en postcode in om Ennatuurlijk-storingen te monitoren. Zowel '1234 AB' als '1234AB' formaten worden geaccepteerd.",
                 "data": {
                     "name": "Naam",
                     "town": "Plaats",
-                    "postal_code": "Postcode"
+                    "postal_code": "Postcode",
+                    "create_alert_sensors": "Activeer alert sensoren (booleaanse sensoren voor gepland, huidig, opgelost)",
+                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren"
+                }
+            },
+            "reconfigure": {
+                "title": "Ennatuurlijk Storingen Instellen",
+                "description": "Voer uw woonplaats en postcode in om Ennatuurlijk-storingen te monitoren. Zowel '1234 AB' als '1234AB' formaten worden geaccepteerd.",
+                "data": {
+                    "name": "Naam",
+                    "town": "Plaats",
+                    "postal_code": "Postcode",
+                    "create_alert_sensors": "Activeer alert sensoren (booleaanse sensoren voor gepland, huidig, opgelost)",
+                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren"
+                }
+            },
+            "init": {
+                "title": "Ennatuurlijk Storingen Opties",
+                "description": "Configureer extra opties voor Ennatuurlijk Storingen.",
+                "data": {
+                    "create_alert_sensors": "Activeer alert sensoren (booleaanse sensoren voor gepland, huidig, opgelost)",
+                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren"
                 }
             }
         }
@@ -18,16 +39,58 @@
                 "name": "Ennatuurlijk Storingen"
             },
             "ennatuurlijk_disruptions_planned": {
-                "name": "Geplande storing"
+                "name": "Geplande storing",
+                "state_attributes": {
+                    "days_until_planned_date": {
+                        "name": "Dagen tot geplande datum"
+                    },
+                    "is_planned_date_today": {
+                        "name": "Is vandaag de geplande datum"
+                    }
+                }
             },
             "ennatuurlijk_disruptions_current": {
-                "name": "Huidige storing"
+                "name": "Huidige storing",
+                "state_attributes": {
+                    "days_since_current_date": {
+                        "name": "Dagen sinds storingsdatum"
+                    },
+                    "is_current_date_today": {
+                        "name": "Is vandaag de storingsdatum"
+                    }
+                }
             },
             "ennatuurlijk_disruptions_solved": {
-                "name": "Opgeloste storing"
+                "name": "Opgeloste storing",
+                "state_attributes": {
+                    "days_since_solved_date": {
+                        "name": "Dagen sinds opgeloste datum"
+                    },
+                    "is_solved_date_today": {
+                        "name": "Is vandaag de opgeloste datum"
+                    }
+                }
             },
-            "ennatuurlijk_disruptions_details": {
-                "name": "Storing details"
+            "ennatuurlijk_disruptions_planned_alert": {
+                "name": "Geplande storing alert"
+            },
+            "ennatuurlijk_disruptions_current_alert": {
+                "name": "Huidige storing alert"
+            },
+            "ennatuurlijk_disruptions_solved_alert": {
+                "name": "Opgeloste storing alert"
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Ennatuurlijk Storingen Opties",
+                "description": "Configureer extra opties voor Ennatuurlijk Storingen.",
+                "data": {
+                    "create_alert_sensors": "Activeer alert sensoren (booleaanse sensoren voor gepland, huidig, opgelost)",
+                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren"
+                }
             }
         }
     }
