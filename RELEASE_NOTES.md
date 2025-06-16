@@ -1,22 +1,37 @@
 # v2.0.0 Release Notes
 
-## Major Refactor
+## Major Refactor & Modernization
 
-- Centralized all data fetching and parsing logic in `fetch.py`.
-- Added in-memory caching and background refresh for disruption data, using `MIN_TIME_BETWEEN_UPDATES` for refresh interval.
-- All parsing and section logic is now modular and reusable.
-- Sensor code is simplified and only handles Home Assistant entity logic.
-- Logging is now fully centralized via `_LOGGER` from `const.py`.
-- Translation and entity naming fully aligned with Home Assistant best practices.
+- **Complete modular restructure**: Centralized all data fetching and parsing logic in `fetch.py` with dedicated sensor files for better maintainability.
+- **Enhanced performance**: Added in-memory caching and background refresh for disruption data with configurable refresh intervals.
+- **Better sensor architecture**: Each sensor type (planned, current, solved) now has its own dedicated file with consistent state and attribute handling.
+- **Alert sensors**: Boolean alert sensors are now fully backwards compatible with v1.x while providing improved functionality.
+- **Translation fixes**: All config flow, options flow, and entity translations now work correctly in both English and Dutch.
+- **User-configurable options**: Added options flow for configuring alert sensor creation and solved disruption retention days.
+- **Robust error handling**: Improved error handling and edge case management throughout the integration.
+- **Home Assistant best practices**: Full alignment with Home Assistant's translation system, entity naming, and integration patterns.
 
-## Breaking Changes
+## New Features
 
-- Internal structure and code layout have changed significantly. No user-facing breaking changes expected, but custom automations/scripts relying on internal Python structure may need review.
+- **Modular sensors**: Separate sensor files for planned, current, and solved disruptions with consistent attribute structure.
+- **Options configuration**: Users can now configure integration options after setup via the UI.
+- **Enhanced attributes**: All sensors now provide rich, consistent attributes including days until/since dates and boolean today indicators.
+- **Last update tracking**: All sensors now display the exact date and time of last successful data fetch.
+- **Configurable alert sensors**: Alert sensors can be enabled/disabled via options and provide backward compatibility.
 
-## Performance and Maintenance Improvements
+## Compatibility & Migration
 
-- Improved performance and reliability due to caching and background refresh.
-- Easier maintenance and future feature development.
+- **Backwards compatible**: Alert sensors maintain full compatibility with v1.x automations and scripts.
+- **No breaking changes**: All existing entity IDs and sensor names remain unchanged.
+- **Improved structure**: New sensors provide better structured data while maintaining compatibility.
+- **Safe upgrade**: Update is completely safe for all existing users.
+
+## Technical Improvements
+
+- **Centralized logging**: All modules use consistent `_LOGGER` for debugging and troubleshooting.
+- **Improved caching**: Smart in-memory caching with background refresh prevents API rate limiting.
+- **Better date handling**: Enhanced date parsing and formatting with proper month name mapping.
+- **Robust translation**: Complete translation support for all UI elements in English and Dutch.
 
 ---
 
