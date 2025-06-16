@@ -6,14 +6,38 @@ Author: Heindrich Paul
 
 from homeassistant import config_entries # type: ignore
 from homeassistant.const import CONF_NAME # type: ignore
-from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, _LOGGER
+from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, _LOGGER, CONF_CREATE_ALERT_SENSORS,CONF_DAYS_TO_KEEP_SOLVED,DEFAULT_CREATE_ALERT_SENSORS,DEFAULT_DAYS_TO_KEEP_SOLVED
 import voluptuous as vol
 import re
 
-DEFAULT_DAYS_TO_KEEP_SOLVED = 7
-CONF_DAYS_TO_KEEP_SOLVED = "days_to_keep_solved"
-CONF_CREATE_ALERT_SENSORS = "create_alert_sensors"
-DEFAULT_CREATE_ALERT_SENSORS = True
+class EnnatuurlijkOptionsFlowHandler(config_entries.OptionsFlow):
+    def __init__(self, config_entry):
+        super().__init__()
+        self._config_entry = config_entry  # Use private attribute, do not set config_entry directly
+
+    @property
+    def config_entry(self):
+        # Provide a property for backward compatibility if needed
+        return self._config_entry
+
+    async def async_step_init(self, user_input=None):
+        errors = {}
+        if user_input is not None:
+            return self.async_create_entry(
+                title="",
+                data={
+                    CONF_DAYS_TO_KEEP_SOLVED: user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
+                    CONF_CREATE_ALERT_SENSORS: user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
+                },
+            )
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({
+                vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=self._config_entry.options.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)): int,
+                vol.Optional(CONF_CREATE_ALERT_SENSORS, default=self._config_entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)): bool
+            }),
+            errors=errors,
+        )
 
 class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -26,8 +50,9 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.debug("Starting async_step_user with input: %s", user_input)
         errors = {}
         if user_input is not None:
-            # Validate postal code format (e.g., 4105TK)
-            postal_code = user_input[CONF_POSTAL_CODE]
+            town = user_input[CONF_TOWN]
+            postal_code = user_input[CONF_POSTAL_CODE].replace(" ", "").upper()
+            # Accept both '1234AB' and '1234 AB' formats
             if not re.match(r'^\d{4}[A-Z]{2}$', postal_code):
                 errors["postal_code"] = "invalid_postal_code"
                 _LOGGER.warning("Invalid postal code format: %s", postal_code)
@@ -37,8 +62,8 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     title=user_input[CONF_NAME],
                     data={
                         CONF_NAME: user_input[CONF_NAME],
-                        CONF_TOWN: user_input[CONF_TOWN],
-                        CONF_POSTAL_CODE: user_input[CONF_POSTAL_CODE]
+                        CONF_TOWN: town,
+                        CONF_POSTAL_CODE: postal_code
                     },
                     options={
                         CONF_DAYS_TO_KEEP_SOLVED: user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
@@ -108,3 +133,7 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }),
             errors=errors
         )
+
+    @staticmethod
+    def async_get_options_flow(config_entry):
+        return EnnatuurlijkOptionsFlowHandler(config_entry)

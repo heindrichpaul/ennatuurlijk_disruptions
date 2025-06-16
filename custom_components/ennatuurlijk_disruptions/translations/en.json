@@ -3,11 +3,24 @@
         "step": {
             "user": {
                 "title": "Ennatuurlijk Disruptions Setup",
-                "description": "Enter your town and postal code to monitor Ennatuurlijk disruptions.",
+                "description": "Enter your town and postal code to monitor Ennatuurlijk disruptions. Both '1234 AB' and '1234AB' formats are accepted.",
                 "data": {
                     "name": "Name",
                     "town": "Town",
-                    "postal_code": "Postal Code"
+                    "postal_code": "Postal Code",
+                    "create_alert_sensors": "Enable alert sensors (boolean sensors for planned, current, solved)",
+                    "days_to_keep_solved": "Number of days to keep solved disruptions"
+                }
+            },
+            "reconfigure": {
+                "title": "Ennatuurlijk Disruptions Setup",
+                "description": "Enter your town and postal code to monitor Ennatuurlijk disruptions. Both '1234 AB' and '1234AB' formats are accepted.",
+                "data": {
+                    "name": "Name",
+                    "town": "Town",
+                    "postal_code": "Postal Code",
+                    "create_alert_sensors": "Enable alert sensors (boolean sensors for planned, current, solved)",
+                    "days_to_keep_solved": "Number of days to keep solved disruptions"
                 }
             },
             "init": {
@@ -15,7 +28,19 @@
                 "description": "Configure additional options for Ennatuurlijk Disruptions.",
                 "data": {
                     "create_alert_sensors": "Enable alert sensors (boolean sensors for planned, current, solved)",
-                    "solved_retention_days": "Number of days to keep solved disruptions"
+                    "days_to_keep_solved": "Number of days to keep solved disruptions"
+                }
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Ennatuurlijk Disruptions Options",
+                "description": "Configure additional options for Ennatuurlijk Disruptions.",
+                "data": {
+                    "create_alert_sensors": "Enable alert sensors (boolean sensors for planned, current, solved)",
+                    "days_to_keep_solved": "Number of days to keep solved disruptions"
                 }
             }
         }
@@ -26,13 +51,25 @@
                 "name": "Ennatuurlijk Disruptions"
             },
             "ennatuurlijk_disruptions_planned": {
-                "name": "Planned disruption"
+                "name": "Planned disruption",
+                "state_attributes": {
+                    "days_until_planned_date": "Days until the planned date",
+                    "is_planned_date_today": "Is today the planned date"
+                }
             },
             "ennatuurlijk_disruptions_current": {
-                "name": "Current disruption"
+                "name": "Current disruption",
+                "state_attributes": {
+                    "days_since_current_date": "Days since the disruption date",
+                    "is_current_date_today": "Is today the disruption date"
+                }
             },
             "ennatuurlijk_disruptions_solved": {
-                "name": "Solved disruption"
+                "name": "Solved disruption",
+                "state_attributes": {
+                    "days_since_solved_date": "Days since the solved date",
+                    "is_solved_date_today": "Is today the solved date"
+                }
             },
             "ennatuurlijk_disruptions_planned_alert": {
                 "name": "Planned disruption alert"

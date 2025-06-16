@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from .const import _LOGGER, SCAN_INTERVAL, MONTH_TO_NUMBER, ENNATUURLIJK_DISRUPTIONS_URL, ENNATUURLIJK_HEADERS
 import threading
 import time
+from datetime import datetime  # <-- Add this import
 
 # Simple in-memory cache for disruption data
 _cache = {}
@@ -158,6 +159,10 @@ def fetch_disruption_section(section: str, town: str, postal_code: str, force_re
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
         all_data = parse_disruptions(soup, town, postal_code)
+        # Set last_update_date as a string (YYYY-MM-DD HH:MM) for sensors
+        from datetime import datetime
+        all_data["last_update_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+        all_data["last_update_success"] = datetime.now()  # keep for compatibility
         with _cache_lock:
             _cache[cache_key] = (all_data, now)
         # Start background refresh thread if not already running
@@ -165,7 +170,13 @@ def fetch_disruption_section(section: str, town: str, postal_code: str, force_re
         if not any(t.name == thread_name for t in threading.enumerate()):
             t = threading.Thread(target=_background_refresh, args=(section, town, postal_code), name=thread_name, daemon=True)
             t.start()
-        return all_data.get(section)
+        section_data = all_data.get(section)
+        # Inject last_update_date and last_update_success into section dict for sensor attributes
+        if section_data is not None:
+            section_data = dict(section_data)  # copy to avoid mutating cache
+            section_data["last_update_date"] = all_data["last_update_date"]
+            section_data["last_update_success"] = all_data["last_update_success"]
+        return section_data
     except Exception as e:
         _LOGGER.error(f"Error fetching section '{section}': {e}")
         return None

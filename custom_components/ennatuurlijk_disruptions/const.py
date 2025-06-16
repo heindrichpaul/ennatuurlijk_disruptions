@@ -10,14 +10,26 @@ CONF_DATE_FORMAT = "dateformat"
 CONF_LOCALE = "locale"
 CONF_ID = "id"
 CONF_NO_DISRUPTIONS_TEXT = "nodisruptionstext"
+CONF_CREATE_ALERT_SENSORS = "create_alert_sensors"
+DEFAULT_CREATE_ALERT_SENSORS = True
+DEFAULT_DAYS_TO_KEEP_SOLVED = 7
+CONF_DAYS_TO_KEEP_SOLVED = "days_to_keep_solved"
+
+
 SENSOR_PREFIX = "Ennatuurlijk Disruptions "
 ATTR_ERROR = "error"
 ATTR_LAST_UPDATE = "last_update"
 ATTR_IS_PLANNED_DATE_TODAY = "is_planned_date_today"
+ATTR_IS_CURRENT_DATE_TODAY = "is_current_date_today"
+ATTR_IS_SOLVED_DATE_TODAY = "is_solved_date_today"
 ATTR_DAYS_UNTIL_PLANNED_DATE = "days_until_planned_date"
+ATTR_DAYS_SINCE_SOLVED_DATE = "days_since_solved_date"
+ATTR_DAYS_SINCE_CURRENT_DATE = "days_since_current_date"
 ATTR_YEAR_MONTH_DAY_DATE = "year_month_day_date"
 ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_LAST_DISRUPTION_DATE = "last_disruption_date"
+
+
 
 
 SCAN_INTERVAL = timedelta(hours=2, minutes=30)
