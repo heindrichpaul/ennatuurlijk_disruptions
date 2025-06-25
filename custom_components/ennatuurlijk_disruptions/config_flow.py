@@ -6,7 +6,7 @@ Author: Heindrich Paul
 
 from homeassistant import config_entries # type: ignore
 from homeassistant.const import CONF_NAME # type: ignore
-from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, _LOGGER, CONF_CREATE_ALERT_SENSORS,CONF_DAYS_TO_KEEP_SOLVED,DEFAULT_CREATE_ALERT_SENSORS,DEFAULT_DAYS_TO_KEEP_SOLVED
+from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, _LOGGER, CONF_CREATE_ALERT_SENSORS, CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_CREATE_ALERT_SENSORS, DEFAULT_DAYS_TO_KEEP_SOLVED, CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
 import voluptuous as vol
 import re
 
@@ -27,14 +27,16 @@ class EnnatuurlijkOptionsFlowHandler(config_entries.OptionsFlow):
                 title="",
                 data={
                     CONF_DAYS_TO_KEEP_SOLVED: user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
-                    CONF_CREATE_ALERT_SENSORS: user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
+                    CONF_CREATE_ALERT_SENSORS: user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS),
+                    CONF_UPDATE_INTERVAL: user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
                 },
             )
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({
                 vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=self._config_entry.options.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)): int,
-                vol.Optional(CONF_CREATE_ALERT_SENSORS, default=self._config_entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)): bool
+                vol.Optional(CONF_CREATE_ALERT_SENSORS, default=self._config_entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)): bool,
+                vol.Optional(CONF_UPDATE_INTERVAL, default=self._config_entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)): int
             }),
             errors=errors,
         )
@@ -67,7 +69,8 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                     options={
                         CONF_DAYS_TO_KEEP_SOLVED: user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
-                        CONF_CREATE_ALERT_SENSORS: user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
+                        CONF_CREATE_ALERT_SENSORS: user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS),
+                        CONF_UPDATE_INTERVAL: user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
                     }
                 )
 
@@ -79,7 +82,8 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_TOWN): str,
                 vol.Required(CONF_POSTAL_CODE): str,
                 vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=DEFAULT_DAYS_TO_KEEP_SOLVED): int,
-                vol.Optional(CONF_CREATE_ALERT_SENSORS, default=DEFAULT_CREATE_ALERT_SENSORS): bool
+                vol.Optional(CONF_CREATE_ALERT_SENSORS, default=DEFAULT_CREATE_ALERT_SENSORS): bool,
+                vol.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int
             }),
             errors=errors
         )
@@ -116,7 +120,8 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                     options={
                         CONF_DAYS_TO_KEEP_SOLVED: user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
-                        CONF_CREATE_ALERT_SENSORS: user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
+                        CONF_CREATE_ALERT_SENSORS: user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS),
+                        CONF_UPDATE_INTERVAL: user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
                     }
                 )
 
@@ -129,7 +134,8 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_TOWN, default=config_entry.data.get(CONF_TOWN)): str,
                 vol.Required(CONF_POSTAL_CODE, default=config_entry.data.get(CONF_POSTAL_CODE)): str,
                 vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=config_entry.options.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)): int,
-                vol.Optional(CONF_CREATE_ALERT_SENSORS, default=config_entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)): bool
+                vol.Optional(CONF_CREATE_ALERT_SENSORS, default=config_entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)): bool,
+                vol.Optional(CONF_UPDATE_INTERVAL, default=config_entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)): int
             }),
             errors=errors
         )

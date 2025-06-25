@@ -24,7 +24,7 @@ ATTR_YEAR_MONTH_DAY_DATE = "year_month_day_date"
 ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_LAST_DISRUPTION_DATE = "last_disruption_date"
 
-SCAN_INTERVAL = timedelta(hours=2, minutes=30)
+DEFAULT_UPDATE_INTERVAL = 120  # minutes (2 hours)
 
 MONTH_TO_NUMBER = {
     "jan": "01",
@@ -61,4 +61,3 @@ ENNATUURLIJK_HEADERS = {
 
 # Update interval config
 CONF_UPDATE_INTERVAL = "update_interval"
-DEFAULT_UPDATE_INTERVAL = 150  # minutes (2.5 hours, matches old SCAN_INTERVAL)

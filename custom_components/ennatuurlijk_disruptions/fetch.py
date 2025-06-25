@@ -1,14 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
-from .const import _LOGGER, SCAN_INTERVAL, MONTH_TO_NUMBER, ENNATUURLIJK_DISRUPTIONS_URL, ENNATUURLIJK_HEADERS
-import threading
-import time
-from datetime import datetime  # <-- Add this import
-
-# Simple in-memory cache for disruption data
-_cache = {}
-_cache_lock = threading.Lock()
-_CACHE_TTL = SCAN_INTERVAL.total_seconds()
+from .const import _LOGGER, MONTH_TO_NUMBER, ENNATUURLIJK_DISRUPTIONS_URL, ENNATUURLIJK_HEADERS
+from datetime import datetime
 
 
 def get_sections(soup):
@@ -22,12 +15,14 @@ def get_sections(soup):
 
 
 def matches_location(title, town, postal_code, postal_code_partial):
+    postal_code_spaced = f"{postal_code_partial} {postal_code[4:]}" if len(postal_code) > 4 else postal_code_partial
     match = (
         town.lower() in title.lower()
         or postal_code in title
         or postal_code_partial in title
+        or postal_code_spaced in title
     )
-    _LOGGER.debug("Location match for title '%s' with %s, %s, %s: %s", title, town, postal_code, postal_code_partial, match)
+    _LOGGER.debug("Location match for title '%s' with %s, %s, %s, %s: %s", title, town, postal_code, postal_code_partial, postal_code_spaced, match)
     return match
 
 
@@ -41,7 +36,6 @@ def extract_date(disruption, date_pattern):
     date = value.get_text(strip=True) if value else ""
     match = date and re.match(date_pattern, date, re.IGNORECASE)
     if match:
-        # Use MONTH_TO_NUMBER from const.py
         m = re.match(r"(\d{1,2})\s+([a-z]+)\s+(\d{4})", date, re.IGNORECASE)
         if m:
             day = m.group(1).zfill(2)
@@ -55,13 +49,16 @@ def extract_date(disruption, date_pattern):
 def parse_disruption_article(disruption, section_name, town, postal_code, postal_code_partial, date_pattern):
     title_elem = disruption.find("h4", class_="h3")
     title = title_elem.get_text(strip=True) if title_elem else ""
-    _LOGGER.debug("Processing disruption article, title: %s, section: %s", title, section_name)
+    # Try to find a link to the disruption if present
+    link_elem = title_elem.find("a") if title_elem else None
+    link = link_elem["href"] if link_elem and link_elem.has_attr("href") else None
+    _LOGGER.debug("Processing disruption article, title: %s, section: %s, link: %s", title, section_name, link)
     if not matches_location(title, town, postal_code, postal_code_partial):
         return None
     date = extract_date(disruption, date_pattern)
     if date:
-        _LOGGER.debug("Parsed disruption: %s, %s, %s", section_name, title, date)
-        return (section_name, title, date)
+        _LOGGER.debug("Parsed disruption: %s, %s, %s, %s", section_name, title, date, link)
+        return (section_name, title, date, link)
     return None
 
 
@@ -104,54 +101,28 @@ def parse_disruptions(soup, town, postal_code):
     details_lines = []
     for section_name, section in sections.items():
         disruptions_info = parse_section(section, section_name, town, postal_code, postal_code_partial, date_pattern)
-        for sec, title, date in disruptions_info:
+        for info in disruptions_info:
+            sec, title, date, link = info if len(info) == 4 else (*info, None)
             key, details_fmt = section_map[sec]
             result[key]["state"] = True
-            result[key]["dates"].append({"description": title, "date": date})
+            result[key]["dates"].append({"description": title, "date": date, "link": link})
             details_lines.append(details_fmt.format(title=title, date=date))
             result["disruptions"].append({
                 "title": title,
                 "date": date,
-                "status": sec
+                "status": sec,
+                "link": link
             })
     result["details"] = "".join(details_lines) if details_lines else "No disruptions found."
     _LOGGER.debug("Final parsed result: %s", result)
     return result
 
 
-def _background_refresh(section, town, postal_code):
-    """Background thread to refresh the cache for a section."""
-    while True:
-        try:
-            url = ENNATUURLIJK_DISRUPTIONS_URL
-            headers = ENNATUURLIJK_HEADERS
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, "html.parser")
-            all_data = parse_disruptions(soup, town, postal_code)
-            with _cache_lock:
-                _cache[(section, town, postal_code)] = (all_data, time.time())
-            _LOGGER.debug(f"Background refreshed cache for {section}, {town}, {postal_code}")
-        except Exception as e:
-            _LOGGER.error(f"Error in background refresh for {section}: {e}")
-        time.sleep(_CACHE_TTL)
-
-
-def fetch_disruption_section(section: str, town: str, postal_code: str, force_refresh: bool = False):
+def fetch_disruption_section(section: str, town: str, postal_code: str):
     """
     Fetch and parse a specific disruption section (planned, current, solved) for a given town and postal code.
-    Uses a cache and starts a background refresh thread if not already running.
-    Returns a dict with the parsed data for the section.
+    Returns a dict with the parsed data for the section, including last_update_date and last_update_success.
     """
-    cache_key = (section, town, postal_code)
-    now = time.time()
-    with _cache_lock:
-        cached = _cache.get(cache_key)
-        if cached and not force_refresh:
-            all_data, ts = cached
-            if now - ts < _CACHE_TTL:
-                return all_data.get(section)
-    # If not cached or expired, fetch synchronously and start background refresh
     try:
         url = ENNATUURLIJK_DISRUPTIONS_URL
         headers = ENNATUURLIJK_HEADERS
@@ -160,20 +131,13 @@ def fetch_disruption_section(section: str, town: str, postal_code: str, force_re
         soup = BeautifulSoup(response.text, "html.parser")
         all_data = parse_disruptions(soup, town, postal_code)
         # Set last_update_date as a string (YYYY-MM-DD HH:MM) for sensors
-        from datetime import datetime
-        all_data["last_update_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-        all_data["last_update_success"] = datetime.now()  # keep for compatibility
-        with _cache_lock:
-            _cache[cache_key] = (all_data, now)
-        # Start background refresh thread if not already running
-        thread_name = f"ennatuurlijk_refresh_{section}_{town}_{postal_code}"
-        if not any(t.name == thread_name for t in threading.enumerate()):
-            t = threading.Thread(target=_background_refresh, args=(section, town, postal_code), name=thread_name, daemon=True)
-            t.start()
+        now = datetime.now()
+        all_data["last_update_date"] = now.strftime("%Y-%m-%d %H:%M")
+        all_data["last_update_success"] = now  # keep for compatibility
         section_data = all_data.get(section)
         # Inject last_update_date and last_update_success into section dict for sensor attributes
         if section_data is not None:
-            section_data = dict(section_data)  # copy to avoid mutating cache
+            section_data = dict(section_data)  # copy to avoid mutating all_data
             section_data["last_update_date"] = all_data["last_update_date"]
             section_data["last_update_success"] = all_data["last_update_success"]
         return section_data
@@ -182,14 +146,14 @@ def fetch_disruption_section(section: str, town: str, postal_code: str, force_re
         return None
 
 
-def fetch_all_disruptions(town: str, postal_code: str, force_refresh: bool = False):
+def fetch_all_disruptions(town: str, postal_code: str):
     """
     Fetch and parse all disruption sections (planned, current, solved) for a given town and postal code.
     Returns a dict with all parsed data.
     """
-    planned = fetch_disruption_section("planned", town, postal_code, force_refresh)
-    current = fetch_disruption_section("current", town, postal_code, force_refresh)
-    solved = fetch_disruption_section("solved", town, postal_code, force_refresh)
+    planned = fetch_disruption_section("planned", town, postal_code)
+    current = fetch_disruption_section("current", town, postal_code)
+    solved = fetch_disruption_section("solved", town, postal_code)
     return {
         "planned": planned or {"state": False, "dates": []},
         "current": current or {"state": False, "dates": []},
