@@ -62,6 +62,18 @@
                     },
                     "is_planned_date_today": {
                         "name": "Is today the planned date"
+                    },
+                    "latest_link": {
+                        "name": "Latest disruption link"
+                    },
+                    "latest_description": {
+                        "name": "Latest disruption description"
+                    },
+                    "disruption_count": {
+                        "name": "Number of planned disruptions"
+                    },
+                    "next_disruption_date": {
+                        "name": "Next planned disruption date"
                     }
                 }
             },
@@ -73,6 +85,18 @@
                     },
                     "is_current_date_today": {
                         "name": "Is today the disruption date"
+                    },
+                    "latest_link": {
+                        "name": "Latest disruption link"
+                    },
+                    "latest_description": {
+                        "name": "Latest disruption description"
+                    },
+                    "disruption_count": {
+                        "name": "Number of current disruptions"
+                    },
+                    "next_disruption_date": {
+                        "name": "Next current disruption date"
                     }
                 }
             },
@@ -84,6 +108,18 @@
                     },
                     "is_solved_date_today": {
                         "name": "Is today the solved date"
+                    },
+                    "latest_link": {
+                        "name": "Latest disruption link"
+                    },
+                    "latest_description": {
+                        "name": "Latest disruption description"
+                    },
+                    "disruption_count": {
+                        "name": "Number of solved disruptions"
+                    },
+                    "next_disruption_date": {
+                        "name": "Next solved disruption date"
                     }
                 }
             },
