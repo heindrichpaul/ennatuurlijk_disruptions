@@ -1,5 +1,6 @@
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, SCAN_INTERVAL, _LOGGER, CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator # type: ignore
+from datetime import timedelta
+from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, SCAN_INTERVAL, _LOGGER, CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS, CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
 from .sensor_planned import EnnatuurlijkPlannedSensor, EnnatuurlijkPlannedAlertSensor
 from .sensor_current import EnnatuurlijkCurrentSensor, EnnatuurlijkCurrentAlertSensor
 from .sensor_solved import EnnatuurlijkSolvedSensor, EnnatuurlijkSolvedAlertSensor
@@ -38,22 +39,20 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 "postal_code": postal_code
             }
 
+    # Get update interval from options, fallback to default
+    update_interval_min = entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL) if hasattr(entry, "options") else DEFAULT_UPDATE_INTERVAL
+    try:
+        update_interval = timedelta(minutes=int(update_interval_min))
+    except Exception:
+        update_interval = SCAN_INTERVAL
+
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
         name=DOMAIN,
         update_method=async_update_data,
-        update_interval=SCAN_INTERVAL,
+        update_interval=update_interval,
     )
-
-    orig_async_request_refresh = coordinator.async_request_refresh
-    async def _async_force_refresh(*args, **kwargs):
-        _LOGGER.debug("Manual update requested, forcing data refresh for Ennatuurlijk Disruptions")
-        await hass.async_add_executor_job(fetch_disruption_section, "planned", town, postal_code, True)
-        await hass.async_add_executor_job(fetch_disruption_section, "current", town, postal_code, True)
-        await hass.async_add_executor_job(fetch_disruption_section, "solved", town, postal_code, True)
-        await orig_async_request_refresh(*args, **kwargs)
-    coordinator.async_request_refresh = _async_force_refresh
 
     _LOGGER.debug("Performing initial data refresh")
     await coordinator.async_config_entry_first_refresh()

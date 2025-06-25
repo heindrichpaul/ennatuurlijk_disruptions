@@ -9,7 +9,8 @@
                     "town": "Plaats",
                     "postal_code": "Postcode",
                     "create_alert_sensors": "Activeer alert sensoren (booleaanse sensoren voor gepland, huidig, opgelost)",
-                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren"
+                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren",
+                    "update_interval": "Update-interval (minuten)"
                 }
             },
             "reconfigure": {
@@ -20,7 +21,8 @@
                     "town": "Plaats",
                     "postal_code": "Postcode",
                     "create_alert_sensors": "Activeer alert sensoren (booleaanse sensoren voor gepland, huidig, opgelost)",
-                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren"
+                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren",
+                    "update_interval": "Update-interval (minuten)"
                 }
             },
             "init": {
@@ -28,7 +30,8 @@
                 "description": "Configureer extra opties voor Ennatuurlijk Storingen.",
                 "data": {
                     "create_alert_sensors": "Activeer alert sensoren (booleaanse sensoren voor gepland, huidig, opgelost)",
-                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren"
+                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren",
+                    "update_interval": "Update-interval (minuten)"
                 }
             }
         }
@@ -89,7 +92,8 @@
                 "description": "Configureer extra opties voor Ennatuurlijk Storingen.",
                 "data": {
                     "create_alert_sensors": "Activeer alert sensoren (booleaanse sensoren voor gepland, huidig, opgelost)",
-                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren"
+                    "days_to_keep_solved": "Aantal dagen om opgeloste storingen te bewaren",
+                    "update_interval": "Update-interval (minuten)"
                 }
             }
         }
