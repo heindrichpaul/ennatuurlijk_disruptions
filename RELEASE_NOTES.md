@@ -1,3 +1,16 @@
+# v2.0.1 Release Notes
+
+## Improvements & Fixes
+
+- **Postal code matching**: Now matches disruptions for all common postal code formats: `1234`, `1234AB`, and `1234 AB` (space-separated), improving detection of disruptions regardless of how the code is entered on the Ennatuurlijk website.
+- **Configurable update interval**: The update interval for fetching disruption data is now user-configurable via the integration options. Users can set the interval in minutes from the UI.
+- **Disruption links in attributes**: If a disruption contains a link, it is now included in the `dates` and `disruptions` attributes for each sensor, allowing direct access to the disruption details from Home Assistant.
+- **Translation updates**: English and Dutch translation files updated to include the new update interval option in all config and options forms.
+- **Removed in-memory cache**: All local caching and background refresh logic has been removed. Data is now always fetched fresh at the configured interval, relying on Home Assistant's update coordinator.
+- **Code cleanup**: Minor improvements to logging and error handling for maintainability.
+
+---
+
 # v2.0.0 Release Notes
 
 ## Major Refactor & Modernization

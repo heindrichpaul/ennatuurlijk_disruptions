@@ -9,7 +9,8 @@
                     "town": "Town",
                     "postal_code": "Postal Code",
                     "create_alert_sensors": "Enable alert sensors (boolean sensors for planned, current, solved)",
-                    "days_to_keep_solved": "Number of days to keep solved disruptions"
+                    "days_to_keep_solved": "Number of days to keep solved disruptions",
+                    "update_interval": "Update interval (minutes)"
                 }
             },
             "reconfigure": {
@@ -20,7 +21,8 @@
                     "town": "Town",
                     "postal_code": "Postal Code",
                     "create_alert_sensors": "Enable alert sensors (boolean sensors for planned, current, solved)",
-                    "days_to_keep_solved": "Number of days to keep solved disruptions"
+                    "days_to_keep_solved": "Number of days to keep solved disruptions",
+                    "update_interval": "Update interval (minutes)"
                 }
             },
             "init": {
@@ -28,7 +30,8 @@
                 "description": "Configure additional options for Ennatuurlijk Disruptions.",
                 "data": {
                     "create_alert_sensors": "Enable alert sensors (boolean sensors for planned, current, solved)",
-                    "days_to_keep_solved": "Number of days to keep solved disruptions"
+                    "days_to_keep_solved": "Number of days to keep solved disruptions",
+                    "update_interval": "Update interval (minutes)"
                 }
             }
         }
@@ -40,7 +43,8 @@
                 "description": "Configure additional options for Ennatuurlijk Disruptions.",
                 "data": {
                     "create_alert_sensors": "Enable alert sensors (boolean sensors for planned, current, solved)",
-                    "days_to_keep_solved": "Number of days to keep solved disruptions"
+                    "days_to_keep_solved": "Number of days to keep solved disruptions",
+                    "update_interval": "Update interval (minutes)"
                 }
             }
         }

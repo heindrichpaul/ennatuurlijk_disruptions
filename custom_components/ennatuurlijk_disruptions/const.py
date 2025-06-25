@@ -6,15 +6,13 @@ CONF_TOWN = "town"
 CONF_POSTAL_CODE = "postal_code"
 
 CONF_ENABLED_SENSORS = "sensors"
-CONF_DATE_FORMAT = "dateformat"
-CONF_LOCALE = "locale"
-CONF_ID = "id"
-CONF_NO_DISRUPTIONS_TEXT = "nodisruptionstext"
 CONF_CREATE_ALERT_SENSORS = "create_alert_sensors"
 DEFAULT_CREATE_ALERT_SENSORS = True
 DEFAULT_DAYS_TO_KEEP_SOLVED = 7
 CONF_DAYS_TO_KEEP_SOLVED = "days_to_keep_solved"
 
+CONF_UPDATE_INTERVAL = "update_interval"
+DEFAULT_UPDATE_INTERVAL = 120
 
 SENSOR_PREFIX = "Ennatuurlijk Disruptions "
 ATTR_ERROR = "error"
@@ -28,9 +26,6 @@ ATTR_DAYS_SINCE_CURRENT_DATE = "days_since_current_date"
 ATTR_YEAR_MONTH_DAY_DATE = "year_month_day_date"
 ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_LAST_DISRUPTION_DATE = "last_disruption_date"
-
-
-
 
 SCAN_INTERVAL = timedelta(hours=2, minutes=30)
 
@@ -58,21 +53,6 @@ MONTH_TO_NUMBER = {
     "oktober": "10",
     "november": "11",
     "december": "12",
-}
-
-NUMBER_TO_MONTH = {
-    1: "januari",
-    2: "februari",
-    3: "maart",
-    4: "april",
-    5: "mei",
-    6: "juni",
-    7: "juli",
-    8: "augustus",
-    9: "september",
-    10: "oktober",
-    11: "november",
-    12: "december",
 }
 
 _LOGGER = logging.getLogger(__name__)
