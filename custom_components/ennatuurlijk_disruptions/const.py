@@ -11,9 +11,6 @@ DEFAULT_CREATE_ALERT_SENSORS = True
 DEFAULT_DAYS_TO_KEEP_SOLVED = 7
 CONF_DAYS_TO_KEEP_SOLVED = "days_to_keep_solved"
 
-CONF_UPDATE_INTERVAL = "update_interval"
-DEFAULT_UPDATE_INTERVAL = 120
-
 SENSOR_PREFIX = "Ennatuurlijk Disruptions "
 ATTR_ERROR = "error"
 ATTR_LAST_UPDATE = "last_update"
@@ -27,7 +24,7 @@ ATTR_YEAR_MONTH_DAY_DATE = "year_month_day_date"
 ATTR_FRIENDLY_NAME = "friendly_name"
 ATTR_LAST_DISRUPTION_DATE = "last_disruption_date"
 
-SCAN_INTERVAL = timedelta(hours=2, minutes=30)
+DEFAULT_UPDATE_INTERVAL = 120  # minutes (2 hours)
 
 MONTH_TO_NUMBER = {
     "jan": "01",
@@ -61,3 +58,6 @@ ENNATUURLIJK_DISRUPTIONS_URL = "https://ennatuurlijk.nl/storingen"
 ENNATUURLIJK_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 }
+
+# Update interval config
+CONF_UPDATE_INTERVAL = "update_interval"

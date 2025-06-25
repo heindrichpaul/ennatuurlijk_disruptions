@@ -1,6 +1,6 @@
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator # type: ignore
 from datetime import timedelta
-from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, SCAN_INTERVAL, _LOGGER, CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS, CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, _LOGGER, CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS, CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
 from .sensor_planned import EnnatuurlijkPlannedSensor, EnnatuurlijkPlannedAlertSensor
 from .sensor_current import EnnatuurlijkCurrentSensor, EnnatuurlijkCurrentAlertSensor
 from .sensor_solved import EnnatuurlijkSolvedSensor, EnnatuurlijkSolvedAlertSensor
@@ -44,7 +44,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     try:
         update_interval = timedelta(minutes=int(update_interval_min))
     except Exception:
-        update_interval = SCAN_INTERVAL
+        update_interval = timedelta(minutes=DEFAULT_UPDATE_INTERVAL)
 
     coordinator = DataUpdateCoordinator(
         hass,
