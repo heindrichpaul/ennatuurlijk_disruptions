@@ -7,7 +7,7 @@ A modern, fully translated Home Assistant integration to monitor Ennatuurlijk di
 ## Installation
 1. **HACS Installation**: Install via HACS by adding this repository as a custom repository: `https://github.com/heindrichpaul/ennatuurlijk_disruptions`.
 2. **Configuration**: Go to Settings > Devices & Services > Add Integration, select "Ennatuurlijk Disruptions", and enter your town and postal code.
-3. **Options**: After setup, click "Configure" to access additional options like alert sensor creation and solved disruption retention settings.
+3. **Options**: After setup, click "Configure" to access additional options like alert sensor creation, solved disruption retention, and update interval settings.
 
 ## Sensors Created
 The integration creates the following sensors with rich attributes and translations:
@@ -27,15 +27,18 @@ The integration creates the following sensors with rich attributes and translati
 ## Features
 
 - **Modern Architecture**: Modular sensor design with dedicated files for each disruption type
-- **Smart Caching**: In-memory caching with background refresh prevents API rate limiting
+- **Configurable Update Interval**: Set how often data is refreshed (in minutes) via the integration options
+- **No Local Caching**: Always fetches fresh data at the configured interval (no in-memory cache)
+- **Disruption Links**: If a disruption contains a link, it is included in the `dates` and `disruptions` attributes for direct access
+- **Flexible Postal Code Matching**: Matches disruptions for all common postal code formats: `1234`, `1234AB`, and `1234 AB`
 - **Rich Attributes**: Each sensor provides comprehensive attributes including days until/since dates
-- **Configurable Options**: Customize alert sensor creation and solved disruption retention via UI
+- **Configurable Options**: Customize alert sensor creation, solved disruption retention, and update interval via UI
 - **Full Translation Support**: Complete Dutch and English translations for all UI elements
 - **Backwards Compatibility**: v1.x alert sensors remain fully functional
 - **Multiple Disruption Support**: Handle multiple disruptions per category with detailed information
 - **Date Intelligence**: Smart date parsing and closest date calculation for sensor states
-- **Real-time Updates**: Configurable refresh intervals with manual update capability
-- **Location Matching**: Flexible matching by town name or postal code (full or partial)
+- **Real-time Updates**: Manual update capability via Home Assistant UI
+- **Location Matching**: Flexible matching by town name or postal code (full, partial, or spaced)
 
 ## Requirements
 
@@ -48,6 +51,7 @@ After initial setup, click "Configure" on the integration to access:
 
 - **Enable Alert Sensors**: Create boolean sensors for automation compatibility
 - **Solved Disruption Retention**: Number of days to keep solved disruptions (default: 7)
+- **Update Interval**: How often to fetch new data (in minutes, default: 120)
 
 ## Sensor Attributes
 
@@ -55,7 +59,7 @@ Each sensor provides rich attributes for automation and display purposes:
 
 ### Main Sensors
 - `state`: Closest relevant date (YYYY-MM-DD format) or None
-- `dates`: List of all disruptions with description and date
+- `dates`: List of all disruptions with description, date, and (if available) a `link` to the disruption
 - `last_update`: Timestamp of last successful data fetch
 - `days_until_planned_date` / `days_since_*_date`: Calculated day differences
 - `is_*_date_today`: Boolean indicating if disruption date is today
@@ -70,8 +74,10 @@ sensor.ennatuurlijk_disruptions_planned:
     dates:
       - description: "Example planned disruption 1"
         date: "23-06-2025"
+        link: "https://ennatuurlijk.nl/storingen/1234"
       - description: "Example planned disruption 2"  
         date: "25-06-2025"
+        link: null
     last_update: "2025-06-16 14:30"
     days_until_planned_date: 7
     is_planned_date_today: false
@@ -104,6 +110,8 @@ automation:
 - **Date Format**: Sensor states use YYYY-MM-DD format for consistency with Home Assistant
 - **Alert Sensors**: Use alert sensors (on/off) for simple automation triggers
 - **Rich Data**: Main sensors provide detailed date calculations and metadata
+- **Disruption Links**: Use the `link` field in the `dates` attribute to access disruption details directly
+- **Flexible Matching**: Disruptions are matched by town, full postal code, partial, or spaced format
 
 ## Troubleshooting
 
@@ -120,6 +128,6 @@ automation:
 
 ## Version
 
-**Current Version**: 2.0.0
+**Current Version**: 2.0.1
 
 **Changelog**: See [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed release information
