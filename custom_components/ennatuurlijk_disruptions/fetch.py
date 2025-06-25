@@ -49,9 +49,13 @@ def extract_date(disruption, date_pattern):
 def parse_disruption_article(disruption, section_name, town, postal_code, postal_code_partial, date_pattern):
     title_elem = disruption.find("h4", class_="h3")
     title = title_elem.get_text(strip=True) if title_elem else ""
-    # Try to find a link to the disruption if present
-    link_elem = title_elem.find("a") if title_elem else None
-    link = link_elem["href"] if link_elem and link_elem.has_attr("href") else None
+    # Robustly find a link to the disruption if present (any <a> in the article)
+    link_elem = disruption.find("a", href=True)
+    link = None
+    if link_elem:
+        link = link_elem["href"]
+        if link and link.startswith("/"):
+            link = f"https://ennatuurlijk.nl{link}"
     _LOGGER.debug("Processing disruption article, title: %s, section: %s, link: %s", title, section_name, link)
     if not matches_location(title, town, postal_code, postal_code_partial):
         return None
