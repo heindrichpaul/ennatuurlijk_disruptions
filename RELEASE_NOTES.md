@@ -1,3 +1,28 @@
+# v2.0.3 Release Notes
+
+## Calendar Improvements & Cleanliness
+
+- **Unified calendar event logic**: Only one event per disruption, regardless of status changes or updates.
+- **No duplicate events**: Each disruption is tracked by its unique id, and event status/timing is updated in place.
+- **Solved-only events**: If a disruption is only present as solved (e.g., integration installed after the event), it is shown as a single all-day event with status `solved`.
+- **Cleaner event descriptions**: The event description now only includes the status (as a hashtag) and the disruption link, making it easier to use in automations and more readable in the UI.
+- **Removed event log from description**: The append-only log is no longer included in the event description, relying on Home Assistant's built-in history for tracking changes.
+- **Consistent status formatting**: Only the three valid statuses are used: `planned`, `current`, and `solved`.
+
+---
+
+# v2.0.2 Release Notes
+
+## Improvements & Refactoring
+
+- **Coordinator/data update logic isolated**: All data-fetching and update logic is now centralized in `fetch.py` via a single `async_update_data` function, improving maintainability and separation of concerns.
+- **No more duplication**: The coordinator is now created and managed only in `__init__.py`, and both sensor and calendar platforms retrieve it from `hass.data`. This removes all code duplication for coordinator setup and data fetching.
+- **Cleaner platform setup**: `sensor.py` and `calendar.py` now only handle entity setup, making the codebase easier to maintain and extend.
+- **Lint and error fixes**: Removed unused variables and functions, resolving all lint errors and warnings.
+- **No breaking changes**: All existing configuration and entity IDs remain unchanged. Upgrade is safe for all users.
+
+---
+
 # v2.0.1 Release Notes
 
 ## Improvements & Fixes

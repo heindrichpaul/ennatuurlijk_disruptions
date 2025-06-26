@@ -163,3 +163,35 @@ def fetch_all_disruptions(town: str, postal_code: str):
         "current": current or {"state": False, "dates": []},
         "solved": solved or {"state": False, "dates": []},
     }
+
+
+async def async_update_data(hass, entry):
+    from .const import CONF_TOWN, CONF_POSTAL_CODE, _LOGGER
+    town = entry.data[CONF_TOWN]
+    postal_code = entry.data[CONF_POSTAL_CODE]
+    _LOGGER.debug("Fetching all disruption data for %s, %s", town, postal_code)
+    try:
+        planned = await hass.async_add_executor_job(fetch_disruption_section, "planned", town, postal_code)
+        current = await hass.async_add_executor_job(fetch_disruption_section, "current", town, postal_code)
+        solved = await hass.async_add_executor_job(fetch_disruption_section, "solved", town, postal_code)
+        result = {
+            "planned": planned or {"state": False, "dates": []},
+            "current": current or {"state": False, "dates": []},
+            "solved": solved or {"state": False, "dates": []},
+            "details": "See attributes for details.",
+            "disruptions": [],
+            "town": town,
+            "postal_code": postal_code
+        }
+        return result
+    except Exception as e:
+        _LOGGER.error("Unexpected error fetching disruption data: %s", str(e))
+        return {
+            "planned": {"state": False, "dates": []},
+            "current": {"state": False, "dates": []},
+            "solved": {"state": False, "dates": []},
+            "details": f"Unexpected error: {str(e)}",
+            "disruptions": [],
+            "town": town,
+            "postal_code": postal_code
+        }

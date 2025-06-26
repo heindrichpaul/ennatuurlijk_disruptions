@@ -1,64 +1,12 @@
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator # type: ignore
-from datetime import timedelta
-from .const import DOMAIN, CONF_TOWN, CONF_POSTAL_CODE, _LOGGER, CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS, CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+from .const import DOMAIN, CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS, _LOGGER
 from .sensor_planned import EnnatuurlijkPlannedSensor, EnnatuurlijkPlannedAlertSensor
 from .sensor_current import EnnatuurlijkCurrentSensor, EnnatuurlijkCurrentAlertSensor
 from .sensor_solved import EnnatuurlijkSolvedSensor, EnnatuurlijkSolvedAlertSensor
-from .fetch import fetch_disruption_section
 
 async def async_setup_entry(hass, entry, async_add_entities):
     _LOGGER.info("Setting up Ennatuurlijk Disruptions sensor for entry: %s", entry.entry_id)
-    town = entry.data[CONF_TOWN]
-    postal_code = entry.data[CONF_POSTAL_CODE]
-
-    async def async_update_data():
-        _LOGGER.debug("Fetching all disruption data for %s, %s", town, postal_code)
-        try:
-            planned = await hass.async_add_executor_job(fetch_disruption_section, "planned", town, postal_code)
-            current = await hass.async_add_executor_job(fetch_disruption_section, "current", town, postal_code)
-            solved = await hass.async_add_executor_job(fetch_disruption_section, "solved", town, postal_code)
-            result = {
-                "planned": planned or {"state": False, "dates": []},
-                "current": current or {"state": False, "dates": []},
-                "solved": solved or {"state": False, "dates": []},
-                "details": "See attributes for details.",
-                "disruptions": [],
-                "town": town,
-                "postal_code": postal_code
-            }
-            return result
-        except Exception as e:
-            _LOGGER.error("Unexpected error fetching disruption data: %s", str(e))
-            return {
-                "planned": {"state": False, "dates": []},
-                "current": {"state": False, "dates": []},
-                "solved": {"state": False, "dates": []},
-                "details": f"Unexpected error: {str(e)}",
-                "disruptions": [],
-                "town": town,
-                "postal_code": postal_code
-            }
-
-    # Get update interval from options, fallback to default
-    update_interval_min = entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL) if hasattr(entry, "options") else DEFAULT_UPDATE_INTERVAL
-    try:
-        update_interval = timedelta(minutes=int(update_interval_min))
-    except Exception:
-        update_interval = timedelta(minutes=DEFAULT_UPDATE_INTERVAL)
-
-    coordinator = DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        name=DOMAIN,
-        update_method=async_update_data,
-        update_interval=update_interval,
-    )
-
-    _LOGGER.debug("Performing initial data refresh")
-    await coordinator.async_config_entry_first_refresh()
-    _LOGGER.debug("Initial refresh successful")
-
-    _LOGGER.debug("Adding EnnatuurlijkSensor entity")
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     create_alert_sensors = entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS) if hasattr(entry, "options") else DEFAULT_CREATE_ALERT_SENSORS
     sensors = [
         EnnatuurlijkPlannedSensor(coordinator, entry),
@@ -72,4 +20,4 @@ async def async_setup_entry(hass, entry, async_add_entities):
             EnnatuurlijkSolvedAlertSensor(coordinator, entry),
         ])
     async_add_entities(sensors)
-    _LOGGER.info("Entity setup completed for %s, %s", town, postal_code)
+    _LOGGER.info("Entity setup completed for entry: %s", entry.entry_id)
