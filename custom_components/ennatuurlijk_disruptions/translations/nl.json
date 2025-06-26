@@ -49,6 +49,18 @@
                     },
                     "is_planned_date_today": {
                         "name": "Is vandaag de geplande datum"
+                    },
+                    "latest_link": {
+                        "name": "Laatste storingslink"
+                    },
+                    "latest_description": {
+                        "name": "Laatste storing omschrijving"
+                    },
+                    "disruption_count": {
+                        "name": "Aantal geplande storingen"
+                    },
+                    "next_disruption_date": {
+                        "name": "Volgende geplande storingsdatum"
                     }
                 }
             },
@@ -60,6 +72,18 @@
                     },
                     "is_current_date_today": {
                         "name": "Is vandaag de storingsdatum"
+                    },
+                    "latest_link": {
+                        "name": "Laatste storingslink"
+                    },
+                    "latest_description": {
+                        "name": "Laatste storing omschrijving"
+                    },
+                    "disruption_count": {
+                        "name": "Aantal huidige storingen"
+                    },
+                    "next_disruption_date": {
+                        "name": "Volgende storingsdatum"
                     }
                 }
             },
@@ -71,6 +95,18 @@
                     },
                     "is_solved_date_today": {
                         "name": "Is vandaag de opgeloste datum"
+                    },
+                    "latest_link": {
+                        "name": "Laatste storingslink"
+                    },
+                    "latest_description": {
+                        "name": "Laatste storing omschrijving"
+                    },
+                    "disruption_count": {
+                        "name": "Aantal opgeloste storingen"
+                    },
+                    "next_disruption_date": {
+                        "name": "Volgende opgeloste storingsdatum"
                     }
                 }
             },

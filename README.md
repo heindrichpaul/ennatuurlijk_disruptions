@@ -128,6 +128,33 @@ automation:
 
 ## Version
 
-**Current Version**: 2.0.1
+**Current Version**: 2.0.3
 
 **Changelog**: See [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed release information
+
+## Calendar Integration
+
+- **Single calendar entity**: All planned, current, and solved disruptions are shown in a single calendar entity.
+- **One event per disruption**: Each disruption is represented by a single event, updated in place as its status changes (planned → current → solved).
+- **Solved-only events**: If a disruption is only present as solved (e.g., integration installed after the event), it is shown as a single all-day event with status `solved`.
+- **Clean event descriptions**: Event descriptions only include the status (as a hashtag, e.g. `#planned`, `#current`, `#solved`) and the disruption link, making them easy to use in automations and readable in the UI.
+- **Status hashtag for automations**: The status in the description is always one of `#planned`, `#current`, or `#solved`. You can use this in automations to trigger actions based on disruption status.
+
+### Example: Automation using calendar event status hashtag
+
+```yaml
+automation:
+  - alias: "Notify on Current Disruption Event"
+    trigger:
+      - platform: calendar
+        event: start
+        entity_id: calendar.ennatuurlijk_disruptions_calendar
+    condition:
+      - condition: template
+        value_template: >
+          {{ '#current' in trigger.calendar_event.description }}
+    action:
+      - service: notify.mobile_app
+        data:
+          message: "A current disruption has started: {{ trigger.calendar_event.summary }}"
+```
