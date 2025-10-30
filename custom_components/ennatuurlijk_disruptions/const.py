@@ -1,4 +1,3 @@
-from datetime import timedelta
 import logging
 
 DOMAIN = "ennatuurlijk_disruptions"

@@ -49,7 +49,7 @@
 - **Robust error handling**: Improved error handling and edge case management throughout the integration.
 - **Home Assistant best practices**: Full alignment with Home Assistant's translation system, entity naming, and integration patterns.
 
-## New Features
+### New Features
 
 - **Modular sensors**: Separate sensor files for planned, current, and solved disruptions with consistent attribute structure.
 - **Options configuration**: Users can now configure integration options after setup via the UI.
@@ -57,14 +57,14 @@
 - **Last update tracking**: All sensors now display the exact date and time of last successful data fetch.
 - **Configurable alert sensors**: Alert sensors can be enabled/disabled via options and provide backward compatibility.
 
-## Compatibility & Migration
+### Compatibility & Migration
 
 - **Backwards compatible**: Alert sensors maintain full compatibility with v1.x automations and scripts.
 - **No breaking changes**: All existing entity IDs and sensor names remain unchanged.
 - **Improved structure**: New sensors provide better structured data while maintaining compatibility.
 - **Safe upgrade**: Update is completely safe for all existing users.
 
-## Technical Improvements
+### Technical Improvements
 
 - **Centralized logging**: All modules use consistent `_LOGGER` for debugging and troubleshooting.
 - **Improved caching**: Smart in-memory caching with background refresh prevents API rate limiting.

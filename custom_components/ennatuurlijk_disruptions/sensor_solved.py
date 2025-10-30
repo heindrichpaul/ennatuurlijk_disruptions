@@ -14,7 +14,7 @@ class EnnatuurlijkSolvedSensor(SensorEntity):
 
     @property
     def state(self):
-        solved = self.coordinator.data.get("solved", {})
+        solved = self.coordinator.solved
         today = datetime.now().date()
         dates = [d["date"] for d in solved.get("dates", []) if d.get("date")]
         if not dates:
@@ -28,7 +28,7 @@ class EnnatuurlijkSolvedSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        solved = self.coordinator.data.get("solved", {})
+        solved = self.coordinator.solved
         today = datetime.now().date()
         dates = solved.get("dates", [])
         date_strs = [d["date"] for d in dates if d.get("date")]
@@ -74,14 +74,14 @@ class EnnatuurlijkSolvedAlertSensor(SensorEntity):
 
     @property
     def state(self):
-        solved = self.coordinator.data.get("solved", {})
+        solved = self.coordinator.solved
         state = "on" if solved.get("state") else "off"
         _LOGGER.debug(f"[{self._attr_unique_id}] State computed: {state}")
         return state
 
     @property
     def extra_state_attributes(self):
-        solved = self.coordinator.data.get("solved", {})
+        solved = self.coordinator.solved
         last_update = solved.get("last_update_date", None)
         _LOGGER.debug(f"[{self._attr_unique_id}] Last update value: {last_update} (raw: {repr(last_update)})")
         attrs = {

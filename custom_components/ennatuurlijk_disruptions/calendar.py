@@ -32,7 +32,8 @@ class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
         disruptions_by_id = {}
         # Gather all disruptions by id and status
         for status in ("planned", "current", "solved"):
-            for disruption in self.coordinator.data.get(status, {}).get("dates", []):
+            status_data = getattr(self.coordinator, status, {})
+            for disruption in status_data.get("dates", []):
                 link = disruption.get("link")
                 disruption_id = self._extract_id_from_link(link)
                 if not disruption_id:

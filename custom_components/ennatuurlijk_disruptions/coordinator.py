@@ -1,8 +1,25 @@
-import requests
-from bs4 import BeautifulSoup
-from .const import _LOGGER, MONTH_TO_NUMBER, ENNATUURLIJK_DISRUPTIONS_URL, ENNATUURLIJK_HEADERS
-from datetime import datetime
+from __future__ import annotations
 
+from datetime import datetime, timedelta
+
+from bs4 import BeautifulSoup
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
+from .const import (
+    DOMAIN,
+    _LOGGER,
+    CONF_TOWN,
+    CONF_POSTAL_CODE,
+    CONF_UPDATE_INTERVAL,
+    DEFAULT_UPDATE_INTERVAL,
+    MONTH_TO_NUMBER,
+    ENNATUURLIJK_DISRUPTIONS_URL,
+    ENNATUURLIJK_HEADERS,
+)
+
+
+# HTML Parsing Functions
 
 def get_sections(soup):
     sections = {
@@ -122,18 +139,32 @@ def parse_disruptions(soup, town, postal_code):
     return result
 
 
-def fetch_disruption_section(section: str, town: str, postal_code: str):
+# Async Fetch Functions
+
+async def fetch_disruption_section(hass, section: str, town: str, postal_code: str):
     """
     Fetch and parse a specific disruption section (planned, current, solved) for a given town and postal code.
     Returns a dict with the parsed data for the section, including last_update_date and last_update_success.
     """
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession
+    
     try:
         url = ENNATUURLIJK_DISRUPTIONS_URL
         headers = ENNATUURLIJK_HEADERS
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
-        all_data = parse_disruptions(soup, town, postal_code)
+        session = async_get_clientsession(hass)
+        
+        async with session.get(url, headers=headers) as response:
+            response.raise_for_status()
+            html = await response.text()
+        
+        # Parse HTML in executor since BeautifulSoup is CPU-intensive
+        soup = await hass.async_add_executor_job(
+            lambda: BeautifulSoup(html, "html.parser")
+        )
+        all_data = await hass.async_add_executor_job(
+            parse_disruptions, soup, town, postal_code
+        )
+        
         # Set last_update_date as a string (YYYY-MM-DD HH:MM) for sensors
         now = datetime.now()
         all_data["last_update_date"] = now.strftime("%Y-%m-%d %H:%M")
@@ -150,48 +181,88 @@ def fetch_disruption_section(section: str, town: str, postal_code: str):
         return None
 
 
-def fetch_all_disruptions(town: str, postal_code: str):
-    """
-    Fetch and parse all disruption sections (planned, current, solved) for a given town and postal code.
-    Returns a dict with all parsed data.
-    """
-    planned = fetch_disruption_section("planned", town, postal_code)
-    current = fetch_disruption_section("current", town, postal_code)
-    solved = fetch_disruption_section("solved", town, postal_code)
-    return {
-        "planned": planned or {"state": False, "dates": []},
-        "current": current or {"state": False, "dates": []},
-        "solved": solved or {"state": False, "dates": []},
-    }
+# Coordinator Class
+
+def _get_update_interval_minutes(entry) -> int:
+    """Return the update interval from config entry options or data, or default."""
+    return entry.options.get(
+        CONF_UPDATE_INTERVAL,
+        entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
+    )
 
 
-async def async_update_data(hass, entry):
-    from .const import CONF_TOWN, CONF_POSTAL_CODE, _LOGGER
-    town = entry.data[CONF_TOWN]
-    postal_code = entry.data[CONF_POSTAL_CODE]
-    _LOGGER.debug("Fetching all disruption data for %s, %s", town, postal_code)
-    try:
-        planned = await hass.async_add_executor_job(fetch_disruption_section, "planned", town, postal_code)
-        current = await hass.async_add_executor_job(fetch_disruption_section, "current", town, postal_code)
-        solved = await hass.async_add_executor_job(fetch_disruption_section, "solved", town, postal_code)
-        result = {
-            "planned": planned or {"state": False, "dates": []},
-            "current": current or {"state": False, "dates": []},
-            "solved": solved or {"state": False, "dates": []},
-            "details": "See attributes for details.",
-            "disruptions": [],
-            "town": town,
-            "postal_code": postal_code
-        }
-        return result
-    except Exception as e:
-        _LOGGER.error("Unexpected error fetching disruption data: %s", str(e))
-        return {
-            "planned": {"state": False, "dates": []},
-            "current": {"state": False, "dates": []},
-            "solved": {"state": False, "dates": []},
-            "details": f"Unexpected error: {str(e)}",
-            "disruptions": [],
-            "town": town,
-            "postal_code": postal_code
-        }
+class EnnatuurlijkCoordinator(DataUpdateCoordinator):
+    """Coordinator for Ennatuurlijk disruptions integration."""
+
+    def __init__(self, hass: HomeAssistant, entry) -> None:
+        """Initialize the coordinator."""
+        update_interval = timedelta(minutes=_get_update_interval_minutes(entry))
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=DOMAIN,
+            update_interval=update_interval,
+        )
+        self.entry = entry
+
+    @property
+    def planned(self):
+        """Return planned disruptions data."""
+        return self.data.get("planned", {"state": False, "dates": []}) if self.data else {"state": False, "dates": []}
+
+    @property
+    def current(self):
+        """Return current disruptions data."""
+        return self.data.get("current", {"state": False, "dates": []}) if self.data else {"state": False, "dates": []}
+
+    @property
+    def solved(self):
+        """Return solved disruptions data."""
+        return self.data.get("solved", {"state": False, "dates": []}) if self.data else {"state": False, "dates": []}
+
+    @property
+    def town(self):
+        """Return the town being monitored."""
+        return self.entry.data[CONF_TOWN]
+
+    @property
+    def postal_code(self):
+        """Return the postal code being monitored."""
+        return self.entry.data[CONF_POSTAL_CODE]
+
+    async def _async_update_data(self):
+        """Fetch data from Ennatuurlijk."""
+        town = self.town
+        postal_code = self.postal_code
+        _LOGGER.debug("Fetching all disruption data for %s, %s", town, postal_code)
+        try:
+            planned = await fetch_disruption_section(self.hass, "planned", town, postal_code)
+            current = await fetch_disruption_section(self.hass, "current", town, postal_code)
+            solved = await fetch_disruption_section(self.hass, "solved", town, postal_code)
+            result = {
+                "planned": planned or {"state": False, "dates": []},
+                "current": current or {"state": False, "dates": []},
+                "solved": solved or {"state": False, "dates": []},
+                "details": "See attributes for details.",
+                "disruptions": [],
+                "town": town,
+                "postal_code": postal_code
+            }
+            return result
+        except Exception as e:
+            _LOGGER.error("Unexpected error fetching disruption data: %s", str(e))
+            return {
+                "planned": {"state": False, "dates": []},
+                "current": {"state": False, "dates": []},
+                "solved": {"state": False, "dates": []},
+                "details": f"Unexpected error: {str(e)}",
+                "disruptions": [],
+                "town": town,
+                "postal_code": postal_code
+            }
+
+
+def create_coordinator(hass: HomeAssistant, entry) -> EnnatuurlijkCoordinator:
+    """Create the shared EnnatuurlijkCoordinator for this config entry."""
+    return EnnatuurlijkCoordinator(hass, entry)
+

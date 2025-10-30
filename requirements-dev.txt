@@ -1,0 +1,7 @@
+# Development requirements for Ennatuurlijk Disruptions
+pytest
+pytest-asyncio
+pytest-cov
+pytest-homeassistant-custom-component
+beautifulsoup4
+syrupy
