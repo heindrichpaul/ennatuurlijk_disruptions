@@ -1,13 +1,17 @@
-from homeassistant.components.calendar import CalendarEntity, CalendarEvent # type: ignore
-from homeassistant.util import dt as dt_util # type: ignore
+from homeassistant.components.calendar import CalendarEntity, CalendarEvent  # type: ignore
+from homeassistant.util import dt as dt_util  # type: ignore
 from datetime import datetime, timedelta
 import re
 from .const import DOMAIN, SENSOR_PREFIX, _LOGGER
 
+
 async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    _LOGGER.debug("Setting up Ennatuurlijk Disruptions Calendar for entry: %s", entry.entry_id)
+    _LOGGER.debug(
+        "Setting up Ennatuurlijk Disruptions Calendar for entry: %s", entry.entry_id
+    )
     async_add_entities([EnnatuurlijkDisruptionsCalendar(coordinator, entry)])
+
 
 class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
     def __init__(self, coordinator, entry):
@@ -39,7 +43,12 @@ class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
                 if not disruption_id:
                     continue
                 if disruption_id not in disruptions_by_id:
-                    disruptions_by_id[disruption_id] = {"id": disruption_id, "statuses": {}, "link": link, "description": disruption.get("description", "Disruption")}
+                    disruptions_by_id[disruption_id] = {
+                        "id": disruption_id,
+                        "statuses": {},
+                        "link": link,
+                        "description": disruption.get("description", "Disruption"),
+                    }
                 disruptions_by_id[disruption_id]["statuses"][status] = disruption
         events = []
         for disruption_id, info in disruptions_by_id.items():
@@ -87,15 +96,12 @@ class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
             if log_entry and (not log or log[-1] != log_entry):
                 log.append(log_entry)
             # Improved description formatting (no log)
-            desc = (
-                f"Status: #{status}\n"
-                f"Link: {link or 'N/A'}"
-            )
+            desc = f"Status: #{status}\nLink: {link or 'N/A'}"
             event = CalendarEvent(
                 summary=summary,
                 start=dt_util.start_of_local_day(start),
                 end=dt_util.start_of_local_day(end),
-                description=desc
+                description=desc,
             )
             events.append(event)
         events.sort(key=lambda e: e.start)

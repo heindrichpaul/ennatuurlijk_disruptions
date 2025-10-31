@@ -22,4 +22,8 @@ async def test_setup_creates_coordinator_and_sensors(
 
     # Basic smoke test that at least one sensor entity is created when data present
     sensor_states = [s for s in hass.states.async_all() if s.entity_id.startswith("sensor.")]
-    assert any("ennatuurlijk_disruptions" in s.entity_id for s in sensor_states)
+    assert len(sensor_states) >= 3  # Should have planned, current, solved sensors
+    
+    # Check binary sensors
+    binary_sensor_states = [s for s in hass.states.async_all() if s.entity_id.startswith("binary_sensor.")]
+    assert len(binary_sensor_states) >= 3  # Should have planned_alert, current_alert, solved_alert
