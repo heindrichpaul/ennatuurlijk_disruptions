@@ -3,10 +3,11 @@
   "name": "Ennatuurlijk Disruptions",
   "codeowners": ["@heindrichpaul"],
   "config_flow": true,
+  "single_instance": true,
   "dependencies": [],
   "documentation": "https://github.com/heindrichpaul/ennatuurlijk_disruptions",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/heindrichpaul/ennatuurlijk_disruptions/issues",
   "requirements": ["beautifulsoup4>=4.12.0"],
-  "version": "2.0.4"
+  "version": "3.0.0"
 }

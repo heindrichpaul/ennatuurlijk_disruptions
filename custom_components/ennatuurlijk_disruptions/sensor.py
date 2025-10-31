@@ -23,10 +23,7 @@ async def async_setup_entry(
 
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
-    sensors = [
-        EnnatuurlijkSensor(coordinator, entry, description)
-        for description in SENSOR_TYPES
-    ]
+    sensors = [EnnatuurlijkSensor(coordinator, entry, description) for description in SENSOR_TYPES]
 
     async_add_entities(sensors)
     _LOGGER.info("Entity setup completed for entry: %s", entry.entry_id)

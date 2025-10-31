@@ -1,114 +1,53 @@
 # Release Notes
 
-## vXX Release Notes
+## v3.0.0 Release Notes
 
-### Major Architecture Refactoring
+### Major Architecture Refactoring & Calendar Aggregation
 
-- **Base class pattern implementation**: Complete refactoring of sensors to use a modern base class architecture inspired by Nederlandse Spoorwegen integration:
-  - Created `entity.py` with base classes (`EnnatuurlijkEntity`, `EnnatuurlijkSensor`, `EnnatuurlijkBinarySensor`)
-  - Introduced entity descriptors with lambda functions for flexible sensor logic
+- **Single calendar entity for all sub entries**: The integration now creates only one calendar entity, which aggregates all disruptions from every config entry (sub entry). No matter how many postal codes/towns you configure, all events appear in a unified calendar.
+- **Config entry/sub entry handling**: Each configuration (postal code/town) is a Home Assistant config entry (sometimes called a sub entry). All are managed independently for sensors and binary sensors, but their disruptions are now combined in the single calendar.
+- **Base class pattern implementation**: Sensors and binary sensors use a modern base class architecture:
+  - `entity.py` with base classes (`EnnatuurlijkEntity`, `EnnatuurlijkSensor`, `EnnatuurlijkBinarySensor`)
+  - Entity descriptors with lambda functions for flexible sensor logic
   - Eliminated code duplication across sensor implementations
 - **Binary sensor platform**: Alert sensors migrated to proper binary sensor platform:
-  - Moved from text-based "on"/"off" sensors to native binary sensors
-  - Added proper `device_class=PROBLEM` for semantic meaning
-  - Created `binary_sensor_types.py` with descriptors for planned, current, and solved alerts
-  - Added `binary_sensor.py` platform for proper Home Assistant integration
-- **Sensor descriptors**: New `sensor_types.py` with lambda-based descriptors:
-  - `value_fn`: Lambda functions for calculating sensor values
-  - `attributes_fn`: Lambda functions for building sensor attributes
-  - Clean separation between sensor logic and data access
-- **Code cleanup**: Removed deprecated sensor files:
-  - Deleted `sensor_current.py`, `sensor_planned.py`, `sensor_solved.py` (270+ lines)
-  - Consolidated to single `sensor.py` platform file (29 lines)
-  - Reduced code duplication and improved maintainability
+  - Native binary sensors with `device_class=PROBLEM`
+  - `binary_sensor_types.py` with descriptors for planned, current, and solved alerts
+  - `binary_sensor.py` platform for Home Assistant integration
+- **Sensor descriptors**: `sensor_types.py` with lambda-based descriptors for value and attributes
+- **Code cleanup**: Removed deprecated sensor files, consolidated to single `sensor.py` platform file
 
 ### Duplicate Prevention System
 
-- **Unique ID implementation**: Postal codes now serve as unique identifiers for config entries:
-  - Uses Home Assistant's built-in `async_set_unique_id()` mechanism
-  - Automatic duplicate detection with `_abort_if_unique_id_configured()`
-  - Works in both initial setup and reconfigure flows
-- **Smart reconfiguration**: Postal code changes are detected and validated:
-  - Allows reconfiguring the same entry with same postal code
-  - Prevents changing to a postal code already used by another entry
-  - Maintains data integrity across configuration changes
-- **User-friendly messages**: Proper abort messages for duplicate attempts:
-  - English: "This postal code is already configured."
-  - Dutch: "Deze postcode is al geconfigureerd."
-  - Success message on successful reconfiguration
+- **Unique ID implementation**: Postal codes are unique identifiers for config entries, preventing duplicates
+- **Smart reconfiguration**: Postal code changes are validated and checked for uniqueness
+- **User-friendly messages**: Proper abort and success messages for duplicate and reconfiguration attempts
 
 ### Debug Logging Enhancements
 
-- **Comprehensive parsing logs**: Added detailed debug logging throughout HTML parsing pipeline:
-  - Section enumeration with article counts and titles
-  - Location matching with step-by-step criteria evaluation
-  - Date extraction with raw text before parsing
-  - Disruption processing with progress tracking
-  - Parse success/failure status for troubleshooting
-- **Better debugging**: Easier to diagnose issues in Home Assistant logs:
-  - Each parsing step logs its progress
-  - Match failures show which criteria didn't match
-  - Section processing shows how many disruptions were found
-  - Final summary shows overall parsing results
+- **Comprehensive parsing logs**: Detailed debug logging throughout HTML parsing pipeline for easier troubleshooting
 
 ### Translation Improvements
 
-- **Proper abort translations**: Moved abort reasons to correct translation section:
-  - `already_configured` moved from `error` to `abort` section
-  - Added `reconfigure_successful` for successful updates
-  - Both English and Dutch translations updated
-- **Config flow messages**: All user-facing messages now properly translated:
-  - Form validation errors in `error` section
-  - Flow abort reasons in `abort` section
-  - Clear distinction between error types
+- **Proper abort translations**: All abort and error messages are properly translated in both English and Dutch
 
 ### Testing Improvements
 
-- **Duplicate prevention tests**: Added comprehensive test coverage:
-  - `test_user_flow_duplicate_postal_code`: Tests initial setup duplicate detection
-  - `test_reconfigure_flow_duplicate_postal_code`: Tests reconfigure duplicate detection
-  - Both tests verify proper abort behavior and reason
-- **Test coverage maintained**: All 20 tests passing with 93% coverage:
-  - 16 config flow tests (including new duplicate tests)
-  - 3 calendar tests
-  - 1 integration setup test
-- **Updated integration test**: Now verifies both sensor and binary_sensor platforms:
-  - Checks for 3+ regular sensors (planned, current, solved)
-  - Checks for 3+ binary sensors (planned_alert, current_alert, solved_alert)
+- **Duplicate prevention tests**: Comprehensive test coverage for duplicate and reconfiguration logic
+- **Calendar tests**: Updated to verify aggregation of events from all config entries in the single calendar entity
+- **Test coverage maintained**: All tests passing with high coverage
 
 ### Technical Improvements
 
-- **CoordinatorEntity inheritance**: All entities now properly inherit from `CoordinatorEntity`:
-  - Automatic update coordination
-  - Proper state management
-  - Better Home Assistant integration
-- **Type hints throughout**: Complete type annotations in new architecture:
-  - Entity descriptors properly typed
-  - Lambda functions with clear signatures
-  - Better IDE support and code clarity
-- **Property-based design**: Clean property access patterns:
-  - `native_value` property for sensor values
-  - `is_on` property for binary sensors
-  - `extra_state_attributes` for additional data
-- **Null safety**: Comprehensive null checks in all property accessors:
-  - Safe access to coordinator data
-  - Fallback values for missing data
-  - No more AttributeError exceptions
+- **CoordinatorEntity inheritance**: All entities inherit from `CoordinatorEntity` for proper update coordination
+- **Type hints and property-based design**: Modern Python typing and clean property access patterns throughout
+- **Null safety**: Comprehensive null checks in all property accessors
 
 ### Compatibility & Migration
 
-- **No breaking changes**: All existing functionality preserved:
-  - Same entity IDs and names
-  - Same attributes and state structure
-  - Existing automations continue to work
-- **Binary sensor migration**: Alert sensors automatically migrate to binary sensor platform:
-  - Old text-based alert sensors deprecated but backward compatible
-  - New binary sensors provide better semantics
-  - Gradual migration path for users
-- **Safe upgrade**: Update is completely safe for all existing users:
-  - Configuration preserved
-  - Historical data maintained
-  - No manual intervention required
+- **No breaking changes**: All existing functionality preserved; upgrade is safe for all users
+- **Binary sensor migration**: Alert sensors automatically migrate to binary sensor platform
+- **Safe upgrade**: Configuration and historical data are preserved
 
 ---
 

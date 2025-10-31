@@ -27,7 +27,7 @@ async def async_setup_entry(
         entry.entry_id,
     )
 
-    # Check if user wants alert sensors
+    # Check if alert sensors are enabled
     create_alert_sensors = (
         entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
         if hasattr(entry, "options")
@@ -40,10 +40,7 @@ async def async_setup_entry(
 
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
-    sensors = [
-        EnnatuurlijkBinarySensor(coordinator, entry, description)
-        for description in BINARY_SENSOR_TYPES
-    ]
+    sensors = [EnnatuurlijkBinarySensor(coordinator, entry, description) for description in BINARY_SENSOR_TYPES]
 
     async_add_entities(sensors)
     _LOGGER.info("Binary sensor setup completed for entry: %s", entry.entry_id)

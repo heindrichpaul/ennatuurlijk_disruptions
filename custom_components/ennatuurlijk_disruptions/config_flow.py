@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""
-Config flow component for Ennatuurlijk Disruptions
-Author: Heindrich Paul
-"""
+"""Config flow for Ennatuurlijk Disruptions integration."""
 
 from homeassistant import config_entries  # type: ignore
 from homeassistant.const import CONF_NAME  # type: ignore
+from homeassistant.config_entries import ConfigFlow
 from .const import (
     DOMAIN,
     CONF_TOWN,
@@ -31,7 +29,7 @@ class EnnatuurlijkOptionsFlowHandler(config_entries.OptionsFlow):
 
     @property
     def config_entry(self):
-        # Provide a property for backward compatibility if needed
+    # Property for backward compatibility
         return self._config_entry
 
     async def async_step_init(self, user_input=None):
@@ -79,75 +77,83 @@ class EnnatuurlijkOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
 
-class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
+
+class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
+    VERSION = 2
 
     def __init__(self):
-        _LOGGER.debug("Initializing EnnatuurlijkConfigFlow")
+        _LOGGER.debug("Initializing EnnatuurlijkConfigFlow (global+subentry)")
         super().__init__()
+        self._global_entry = None
 
     async def async_step_user(self, user_input=None):
-        _LOGGER.debug("Starting async_step_user with input: %s", user_input)
+    # Global config entry step
+        errors = {}
+        if user_input is not None:
+            # Only one global config entry allowed
+            await self.async_set_unique_id("ennatuurlijk_global")
+            self._abort_if_unique_id_configured()
+            return self.async_create_entry(
+                title="Ennatuurlijk Disruptions (Global Settings)",
+                data={
+                    CONF_DAYS_TO_KEEP_SOLVED: user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
+                    CONF_UPDATE_INTERVAL: user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
+                },
+            )
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=DEFAULT_DAYS_TO_KEEP_SOLVED): int,
+                    vol.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int,
+                }
+            ),
+            errors=errors,
+        )
+
+    async def async_step_add_subentry(self, user_input=None):
+    # Subentry step (postal code/town)
         errors = {}
         if user_input is not None:
             town = user_input[CONF_TOWN]
             postal_code = user_input[CONF_POSTAL_CODE].replace(" ", "").upper()
-            # Accept both '1234AB' and '1234 AB' formats
+            name = user_input.get(CONF_NAME, f"Ennatuurlijk Disruptions {town}")
+            days_to_keep_solved = user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)
+            create_alert_sensors = user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
+            update_interval = user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
             if not re.match(r"^\d{4}[A-Z]{2}$", postal_code):
                 errors["postal_code"] = "invalid_postal_code"
-                _LOGGER.warning("Invalid postal code format: %s", postal_code)
-
             if not errors:
-                # Set unique ID to postal code and check for duplicates
                 await self.async_set_unique_id(postal_code)
                 self._abort_if_unique_id_configured()
-
-                _LOGGER.info(
-                    "Creating config entry for %s, %s",
-                    user_input[CONF_TOWN],
-                    user_input[CONF_POSTAL_CODE],
-                )
                 return self.async_create_entry(
-                    title=user_input[CONF_NAME],
+                    title=name,
                     data={
-                        CONF_NAME: user_input[CONF_NAME],
+                        CONF_NAME: name,
                         CONF_TOWN: town,
                         CONF_POSTAL_CODE: postal_code,
                     },
                     options={
-                        CONF_DAYS_TO_KEEP_SOLVED: user_input.get(
-                            CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED
-                        ),
-                        CONF_CREATE_ALERT_SENSORS: user_input.get(
-                            CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS
-                        ),
-                        CONF_UPDATE_INTERVAL: user_input.get(
-                            CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
-                        ),
+                        CONF_DAYS_TO_KEEP_SOLVED: days_to_keep_solved,
+                        CONF_CREATE_ALERT_SENSORS: create_alert_sensors,
+                        CONF_UPDATE_INTERVAL: update_interval,
                     },
                 )
-
-        _LOGGER.debug("Showing config form")
         return self.async_show_form(
-            step_id="user",
+            step_id="add_subentry",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_NAME, default="Ennatuurlijk Disruptions"): str,
                     vol.Required(CONF_TOWN): str,
                     vol.Required(CONF_POSTAL_CODE): str,
-                    vol.Optional(
-                        CONF_DAYS_TO_KEEP_SOLVED, default=DEFAULT_DAYS_TO_KEEP_SOLVED
-                    ): int,
-                    vol.Optional(
-                        CONF_CREATE_ALERT_SENSORS, default=DEFAULT_CREATE_ALERT_SENSORS
-                    ): bool,
-                    vol.Optional(
-                        CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL
-                    ): int,
+                    vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=DEFAULT_DAYS_TO_KEEP_SOLVED): int,
+                    vol.Optional(CONF_CREATE_ALERT_SENSORS, default=DEFAULT_CREATE_ALERT_SENSORS): bool,
+                    vol.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int,
                 }
             ),
             errors=errors,
         )
+
 
     async def async_step_reconfigure(self, user_input=None):
         _LOGGER.debug(
@@ -155,7 +161,7 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input,
             self.context,
         )
-        # Check if config_entry_id is available, fall back to context
+    # Get config_entry_id from context
         entry_id = self.context.get("entry_id") if "entry_id" in self.context else None
         if not entry_id:
             _LOGGER.error(
@@ -163,7 +169,7 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             return self.async_abort(reason="entry_not_found")
 
-        # Fetch the existing config entry
+    # Fetch the config entry
         config_entry = self.hass.config_entries.async_get_entry(entry_id)
         if config_entry is None:
             _LOGGER.error(
@@ -173,7 +179,7 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         errors = {}
         if user_input is not None:
-            # Validate postal code format
+            # Validate postal code
             postal_code = user_input[CONF_POSTAL_CODE]
             if not re.match(r"^\d{4}[A-Z]{2}$", postal_code):
                 errors["postal_code"] = "invalid_postal_code"
@@ -182,7 +188,7 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
             if not errors:
-                # Check if postal code changed and if new one is already in use
+                # Check for duplicate postal code
                 if postal_code != config_entry.data.get(CONF_POSTAL_CODE):
                     await self.async_set_unique_id(postal_code)
                     self._abort_if_unique_id_configured()
@@ -192,7 +198,7 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     user_input[CONF_TOWN],
                     user_input[CONF_POSTAL_CODE],
                 )
-                # Update the unique_id in the entry if postal code changed
+                # Update unique_id if postal code changed
                 self.hass.config_entries.async_update_entry(
                     config_entry, unique_id=postal_code
                 )
@@ -218,11 +224,11 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
-        # Pre-fill form with existing values
+    # Pre-fill form with current values
         _LOGGER.debug(
             "Showing reconfigure form with existing values: %s", config_entry.data
         )
-        return self.async_show_form(
+    return self.async_show_form(
             step_id="reconfigure",
             data_schema=vol.Schema(
                 {
@@ -264,4 +270,4 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(config_entry):
-        return EnnatuurlijkOptionsFlowHandler(config_entry)
+    return EnnatuurlijkOptionsFlowHandler(config_entry)

@@ -17,28 +17,30 @@ from .const import _LOGGER, DOMAIN
 from .coordinator import EnnatuurlijkCoordinator
 
 
-@dataclass
+@dataclass(frozen=True)
 class EnnatuurlijkSensorEntityDescription(SensorEntityDescription):
     """Describes Ennatuurlijk sensor entity."""
 
     value_fn: Callable[[dict, date], str | None] | None = None
     attributes_fn: Callable[[dict, date, str], dict] | None = None
-    data_key: str | None = (
-        None  # Key to access coordinator data (e.g., "planned", "current", "solved")
-    )
+    data_key: str | None = None  # Key for coordinator data
 
 
-@dataclass
+@dataclass(frozen=True)
 class EnnatuurlijkBinarySensorEntityDescription(BinarySensorEntityDescription):
     """Describes Ennatuurlijk binary sensor entity."""
 
     is_on_fn: Callable[[dict], bool] | None = None
     attributes_fn: Callable[[dict], dict] | None = None
-    data_key: str | None = None  # Key to access coordinator data
+    data_key: str | None = None  # Key for coordinator data
 
 
 class EnnatuurlijkEntity(CoordinatorEntity):
     """Base class for Ennatuurlijk entities."""
+
+    @property
+    def has_entity_name(self) -> bool:
+        return True
 
     def __init__(
         self,
@@ -50,9 +52,9 @@ class EnnatuurlijkEntity(CoordinatorEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._entry = entry
+        # Use entry_id and description.key for unique_id
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_{description.key}"
-
-        # Set device info for grouping
+        # Device info for subentry
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": f"Ennatuurlijk Disruptions {entry.data.get('town', '')}",
@@ -67,6 +69,10 @@ class EnnatuurlijkEntity(CoordinatorEntity):
 
 
 class EnnatuurlijkSensor(EnnatuurlijkEntity, SensorEntity):
+    @property
+    def has_entity_name(self) -> bool:
+        return True
+
     """Base class for Ennatuurlijk sensors."""
 
     entity_description: EnnatuurlijkSensorEntityDescription
@@ -104,7 +110,8 @@ class EnnatuurlijkSensor(EnnatuurlijkEntity, SensorEntity):
 
         data = getattr(self.coordinator, self.entity_description.data_key)
         today = datetime.now().date()
-        name = self.name or ""
+        # Ensure name is string
+        name = str(self.name) if self.name is not None else ""
 
         if self.entity_description.attributes_fn:
             attrs = self.entity_description.attributes_fn(data, today, name)
@@ -115,6 +122,10 @@ class EnnatuurlijkSensor(EnnatuurlijkEntity, SensorEntity):
 
 
 class EnnatuurlijkBinarySensor(EnnatuurlijkEntity, BinarySensorEntity):
+    @property
+    def has_entity_name(self) -> bool:
+        return True
+
     """Base class for Ennatuurlijk binary sensors."""
 
     entity_description: EnnatuurlijkBinarySensorEntityDescription

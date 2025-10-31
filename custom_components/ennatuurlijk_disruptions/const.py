@@ -1,3 +1,4 @@
+"""Constants for Ennatuurlijk Disruptions integration."""
 import logging
 
 DOMAIN = "ennatuurlijk_disruptions"

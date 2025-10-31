@@ -3,22 +3,21 @@
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
-
-from .entity import EnnatuurlijkBinarySensorEntityDescription
 from .const import (
     ATTR_ERROR,
     ATTR_FRIENDLY_NAME,
     ATTR_LAST_UPDATE,
 )
+from .entity import EnnatuurlijkBinarySensorEntityDescription
 
 
 def _alert_is_on_fn(data: dict) -> bool:
-    """Determine if alert is on."""
+    """Return True if alert is on."""
     return bool(data.get("state"))
 
 
 def _alert_attributes_fn(data: dict) -> dict:
-    """Build alert sensor attributes."""
+    """Return alert sensor attributes."""
     return {
         ATTR_ERROR: False,
         ATTR_FRIENDLY_NAME: data.get("friendly_name", ""),

@@ -1,15 +1,11 @@
-"""Pytest fixtures for Ennatuurlijk Disruptions integration tests.
-
-Mirrors Home Assistant core patterns (see Nederlandse Spoorwegen tests) using
-MockConfigEntry and patching network-facing layers.
-"""
 
 from __future__ import annotations
+
+import types
 from collections.abc import Generator
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry  # type: ignore
 
 from custom_components.ennatuurlijk_disruptions.const import (
@@ -18,8 +14,22 @@ from custom_components.ennatuurlijk_disruptions.const import (
     CONF_POSTAL_CODE,
 )
 
+"""Pytest fixtures for Ennatuurlijk Disruptions integration tests.
+
+Mirrors Home Assistant core patterns (see Nederlandse Spoorwegen tests) using
+MockConfigEntry and patching network-facing layers.
+"""
+
 # Enable pytest-homeassistant-custom-component fixtures like `hass`
 pytest_plugins = "pytest_homeassistant_custom_component"
+
+@pytest.fixture
+def mock_global_config_entry():
+    """Provide a mock global config entry for the integration."""
+    entry = types.SimpleNamespace()
+    entry.options = {"days_to_keep_solved": 7, "update_interval": 120}
+    entry.data = {"days_to_keep_solved": 7, "update_interval": 120}
+    return entry
 
 
 @pytest.fixture
