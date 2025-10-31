@@ -1,6 +1,33 @@
-# v2.0.3 Release Notes
+# Release Notes
 
-## Calendar Improvements & Cleanliness
+## v2.0.4 Release Notes
+
+### Testing & Quality Improvements
+
+- **Comprehensive test suite**: Added 26 comprehensive test cases covering all functionality:
+  - Config flow tests (15 tests) with 97% coverage
+  - Calendar tests (3 tests) for event creation and logic
+  - Sensor tests (8 tests) for all sensor types and their public interfaces
+- **Improved test architecture**: Migrated from testing internal implementation details to testing public sensor interfaces, following Home Assistant best practices
+- **Async migration completion**: Full migration from synchronous `requests` to asynchronous `aiohttp` via Home Assistant's built-in client session
+- **Code consolidation**: Merged `fetch.py` into `coordinator.py` for better maintainability
+- **Coordinator properties**: Added clean property-based access (`coordinator.planned`, `coordinator.current`, `coordinator.solved`) instead of dictionary access
+- **Fixture-based testing**: All tests use HTML fixtures to avoid network calls and ensure consistent test data
+- **Test coverage**: Achieved 93% test coverage across all components
+- **CI/CD integration**: Added automated test execution to release workflow to ensure quality
+
+### Technical Improvements
+
+- **Better test patterns**: Tests now verify actual sensor behavior rather than internal parsing functions
+- **Consistent mocking**: Unified approach to mocking aiohttp responses with realistic HTML fixture data
+- **Property-based design**: All sensors and calendar now use coordinator properties for cleaner, more maintainable code
+- **Enhanced maintainability**: Tests can now survive internal implementation changes while continuing to verify correct behavior
+
+---
+
+## v2.0.3 Release Notes
+
+### Calendar Improvements & Cleanliness
 
 - **Unified calendar event logic**: Only one event per disruption, regardless of status changes or updates.
 - **No duplicate events**: Each disruption is tracked by its unique id, and event status/timing is updated in place.
@@ -11,9 +38,9 @@
 
 ---
 
-# v2.0.2 Release Notes
+## v2.0.2 Release Notes
 
-## Improvements & Refactoring
+### Improvements & Refactoring
 
 - **Coordinator/data update logic isolated**: All data-fetching and update logic is now centralized in `fetch.py` via a single `async_update_data` function, improving maintainability and separation of concerns.
 - **No more duplication**: The coordinator is now created and managed only in `__init__.py`, and both sensor and calendar platforms retrieve it from `hass.data`. This removes all code duplication for coordinator setup and data fetching.
@@ -23,9 +50,9 @@
 
 ---
 
-# v2.0.1 Release Notes
+## v2.0.1 Release Notes
 
-## Improvements & Fixes
+### Improvements & Fixes
 
 - **Postal code matching**: Now matches disruptions for all common postal code formats: `1234`, `1234AB`, and `1234 AB` (space-separated), improving detection of disruptions regardless of how the code is entered on the Ennatuurlijk website.
 - **Configurable update interval**: The update interval for fetching disruption data is now user-configurable via the integration options. Users can set the interval in minutes from the UI.
@@ -36,9 +63,9 @@
 
 ---
 
-# v2.0.0 Release Notes
+## v2.0.0 Release Notes
 
-## Major Refactor & Modernization
+### Major Refactor & Modernization
 
 - **Complete modular restructure**: Centralized all data fetching and parsing logic in `fetch.py` with dedicated sensor files for better maintainability.
 - **Enhanced performance**: Added in-memory caching and background refresh for disruption data with configurable refresh intervals.
@@ -49,7 +76,7 @@
 - **Robust error handling**: Improved error handling and edge case management throughout the integration.
 - **Home Assistant best practices**: Full alignment with Home Assistant's translation system, entity naming, and integration patterns.
 
-### New Features
+#### New Features
 
 - **Modular sensors**: Separate sensor files for planned, current, and solved disruptions with consistent attribute structure.
 - **Options configuration**: Users can now configure integration options after setup via the UI.
@@ -57,14 +84,14 @@
 - **Last update tracking**: All sensors now display the exact date and time of last successful data fetch.
 - **Configurable alert sensors**: Alert sensors can be enabled/disabled via options and provide backward compatibility.
 
-### Compatibility & Migration
+#### Compatibility & Migration
 
 - **Backwards compatible**: Alert sensors maintain full compatibility with v1.x automations and scripts.
 - **No breaking changes**: All existing entity IDs and sensor names remain unchanged.
 - **Improved structure**: New sensors provide better structured data while maintaining compatibility.
 - **Safe upgrade**: Update is completely safe for all existing users.
 
-### Technical Improvements
+#### Technical Improvements
 
 - **Centralized logging**: All modules use consistent `_LOGGER` for debugging and troubleshooting.
 - **Improved caching**: Smart in-memory caching with background refresh prevents API rate limiting.
