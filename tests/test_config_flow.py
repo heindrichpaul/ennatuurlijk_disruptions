@@ -1,4 +1,5 @@
 """Tests for the config flow."""
+
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
@@ -17,7 +18,9 @@ from custom_components.ennatuurlijk_disruptions.const import (
 )
 
 
-async def test_user_flow_success(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_user_flow_success(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
     """Test successful user flow with valid input."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -52,7 +55,9 @@ async def test_user_flow_success(hass: HomeAssistant, enable_custom_integrations
     }
 
 
-async def test_user_flow_postal_code_with_space(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_user_flow_postal_code_with_space(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
     """Test that postal codes with spaces are normalized."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -74,7 +79,9 @@ async def test_user_flow_postal_code_with_space(hass: HomeAssistant, enable_cust
     assert result["data"][CONF_POSTAL_CODE] == "3011AB"  # Space removed
 
 
-async def test_user_flow_postal_code_lowercase(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_user_flow_postal_code_lowercase(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
     """Test that lowercase postal codes are converted to uppercase."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -127,7 +134,9 @@ async def test_user_flow_invalid_postal_code_too_many_letters(
     assert result["data"][CONF_POSTAL_CODE] == "1234AB"
 
 
-async def test_user_flow_default_values(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_user_flow_default_values(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
     """Test that default values are used when optional fields are omitted."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -151,7 +160,9 @@ async def test_user_flow_default_values(hass: HomeAssistant, enable_custom_integ
     }
 
 
-async def test_options_flow_init_form(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_options_flow_init_form(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
     """Test the options flow displays the form and completes."""
     entry = await _create_entry(hass, mock_requests_get)
 
@@ -178,7 +189,9 @@ async def test_options_flow_init_form(hass: HomeAssistant, enable_custom_integra
     }
 
 
-async def test_options_flow_update(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_options_flow_update(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
     """Test updating options via options flow."""
     # Create a config entry with initial options
     entry = await _create_entry(hass, mock_requests_get)
@@ -203,7 +216,9 @@ async def test_options_flow_update(hass: HomeAssistant, enable_custom_integratio
     }
 
 
-async def test_options_flow_uses_defaults(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_options_flow_uses_defaults(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
     """Test that options flow uses default values when fields are omitted."""
     # Create entry with minimal setup (will use defaults)
     result = await hass.config_entries.flow.async_init(
@@ -234,14 +249,19 @@ async def test_options_flow_uses_defaults(hass: HomeAssistant, enable_custom_int
     assert result["data"][CONF_UPDATE_INTERVAL] == DEFAULT_UPDATE_INTERVAL
 
 
-async def test_reconfigure_flow_shows_form(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_reconfigure_flow_shows_form(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
     """Test that reconfigure flow shows a form with existing values and completes."""
     # First create an entry
     entry = await _create_entry(hass, mock_requests_get)
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
     )
 
     assert result["type"] == FlowResultType.FORM
@@ -264,13 +284,18 @@ async def test_reconfigure_flow_shows_form(hass: HomeAssistant, enable_custom_in
     assert result["reason"] == "reconfigure_successful"
 
 
-async def test_reconfigure_flow_updates_entry(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_reconfigure_flow_updates_entry(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
     """Test reconfigure flow successfully updates the config entry."""
     entry = await _create_entry(hass, mock_requests_get)
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
     )
 
     # Update with new values
@@ -307,7 +332,10 @@ async def test_reconfigure_flow_invalid_postal_code(
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
     )
 
     # Submit invalid postal code
@@ -374,7 +402,10 @@ async def test_reconfigure_uses_defaults_for_options(
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
     )
 
     # Only provide required fields
@@ -391,8 +422,12 @@ async def test_reconfigure_uses_defaults_for_options(
 
     # Verify default values were used for options
     updated_entry = hass.config_entries.async_get_entry(entry.entry_id)
-    assert updated_entry.options[CONF_DAYS_TO_KEEP_SOLVED] == DEFAULT_DAYS_TO_KEEP_SOLVED
-    assert updated_entry.options[CONF_CREATE_ALERT_SENSORS] == DEFAULT_CREATE_ALERT_SENSORS
+    assert (
+        updated_entry.options[CONF_DAYS_TO_KEEP_SOLVED] == DEFAULT_DAYS_TO_KEEP_SOLVED
+    )
+    assert (
+        updated_entry.options[CONF_CREATE_ALERT_SENSORS] == DEFAULT_CREATE_ALERT_SENSORS
+    )
     assert updated_entry.options[CONF_UPDATE_INTERVAL] == DEFAULT_UPDATE_INTERVAL
 
 
