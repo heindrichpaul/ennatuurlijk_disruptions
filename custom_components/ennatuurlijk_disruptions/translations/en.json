@@ -34,6 +34,13 @@
                     "update_interval": "Update interval (minutes)"
                 }
             }
+        },
+        "error": {
+            "invalid_postal_code": "Invalid postal code format. Please use format: 1234AB or 1234 AB"
+        },
+        "abort": {
+            "already_configured": "This postal code is already configured.",
+            "reconfigure_successful": "Configuration updated successfully."
         }
     },
     "options": {

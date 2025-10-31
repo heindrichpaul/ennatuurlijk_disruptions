@@ -467,3 +467,83 @@ async def _create_entry(hass: HomeAssistant, mock_requests_get):
 
     entry_id = result["result"].entry_id
     return hass.config_entries.async_get_entry(entry_id)
+
+
+async def test_user_flow_duplicate_postal_code(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
+    """Test that duplicate postal codes are rejected."""
+    # Create first entry
+    await _create_entry(hass, mock_requests_get)
+    
+    # Try to create another entry with the same postal code
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "user"
+    
+    # Submit duplicate postal code - should abort
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_NAME: "Duplicate Entry",
+            CONF_TOWN: "Amsterdam",
+            CONF_POSTAL_CODE: "5045AB",  # Same as first entry
+            CONF_DAYS_TO_KEEP_SOLVED: 7,
+            CONF_CREATE_ALERT_SENSORS: True,
+            CONF_UPDATE_INTERVAL: 15,
+        },
+    )
+    
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_reconfigure_flow_duplicate_postal_code(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
+    """Test that reconfiguring to a duplicate postal code is rejected."""
+    # Create first entry
+    await _create_entry(hass, mock_requests_get)
+    
+    # Create second entry with different postal code
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_NAME: "Second Entry",
+            CONF_TOWN: "Rotterdam",
+            CONF_POSTAL_CODE: "3011AB",
+            CONF_DAYS_TO_KEEP_SOLVED: 7,
+            CONF_CREATE_ALERT_SENSORS: True,
+            CONF_UPDATE_INTERVAL: 15,
+        },
+    )
+    entry2 = result["result"]
+    
+    # Try to reconfigure second entry to use first entry's postal code
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": entry2.entry_id},
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    
+    # Try to change to duplicate postal code - should abort
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_NAME: "Second Entry",
+            CONF_TOWN: "Rotterdam",
+            CONF_POSTAL_CODE: "5045AB",  # Same as first entry
+            CONF_DAYS_TO_KEEP_SOLVED: 7,
+            CONF_CREATE_ALERT_SENSORS: True,
+            CONF_UPDATE_INTERVAL: 15,
+        },
+    )
+    
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "already_configured"

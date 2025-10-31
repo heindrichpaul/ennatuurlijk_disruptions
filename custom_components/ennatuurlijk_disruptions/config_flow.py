@@ -96,7 +96,12 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not re.match(r"^\d{4}[A-Z]{2}$", postal_code):
                 errors["postal_code"] = "invalid_postal_code"
                 _LOGGER.warning("Invalid postal code format: %s", postal_code)
+
             if not errors:
+                # Set unique ID to postal code and check for duplicates
+                await self.async_set_unique_id(postal_code)
+                self._abort_if_unique_id_configured()
+
                 _LOGGER.info(
                     "Creating config entry for %s, %s",
                     user_input[CONF_TOWN],
@@ -175,14 +180,26 @@ class EnnatuurlijkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.warning(
                     "Invalid postal code format during reconfigure: %s", postal_code
                 )
+
             if not errors:
+                # Check if postal code changed and if new one is already in use
+                if postal_code != config_entry.data.get(CONF_POSTAL_CODE):
+                    await self.async_set_unique_id(postal_code)
+                    self._abort_if_unique_id_configured()
+
                 _LOGGER.info(
                     "Updating config entry for %s, %s",
                     user_input[CONF_TOWN],
                     user_input[CONF_POSTAL_CODE],
                 )
+                # Update the unique_id in the entry if postal code changed
+                self.hass.config_entries.async_update_entry(
+                    config_entry, unique_id=postal_code
+                )
+
                 return self.async_update_reload_and_abort(
                     config_entry,
+                    reason="reconfigure_successful",
                     data={
                         CONF_NAME: user_input[CONF_NAME],
                         CONF_TOWN: user_input[CONF_TOWN],

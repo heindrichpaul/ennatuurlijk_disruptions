@@ -34,6 +34,13 @@
                     "update_interval": "Update-interval (minuten)"
                 }
             }
+        },
+        "error": {
+            "invalid_postal_code": "Ongeldig postcodeformaat. Gebruik formaat: 1234AB of 1234 AB"
+        },
+        "abort": {
+            "already_configured": "Deze postcode is al geconfigureerd.",
+            "reconfigure_successful": "Configuratie succesvol bijgewerkt."
         }
     },
     "entity": {
