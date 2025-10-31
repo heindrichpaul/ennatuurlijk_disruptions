@@ -224,11 +224,11 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
                     },
                 )
 
-    # Pre-fill form with current values
+        # Pre-fill form with current values
         _LOGGER.debug(
             "Showing reconfigure form with existing values: %s", config_entry.data
         )
-    return self.async_show_form(
+        return self.async_show_form(
             step_id="reconfigure",
             data_schema=vol.Schema(
                 {
@@ -270,4 +270,4 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(config_entry):
-    return EnnatuurlijkOptionsFlowHandler(config_entry)
+        return EnnatuurlijkOptionsFlowHandler(config_entry)

@@ -17,14 +17,15 @@ from custom_components.ennatuurlijk_disruptions.const import (
     DEFAULT_DAYS_TO_KEEP_SOLVED,
     DEFAULT_UPDATE_INTERVAL,
 )
+import pytest
 
 
-# --- Fixtures and helpers for DRY tests ---
 """
 Fixtures and helpers for config flow tests.
 All helpers/fixtures are DRY and reusable across tests.
 """
-import pytest
+
+
 
 @pytest.fixture
 async def global_config_entry(hass):
@@ -140,9 +141,6 @@ async def test_user_flow_success(
     }
 
 
-
-import pytest
-
 @pytest.mark.parametrize(
     "postal_code,expected",
     [
@@ -208,9 +206,6 @@ async def test_user_flow_default_values(
         CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_INTERVAL,
     }
 
-
-
-import pytest
 
 @pytest.mark.parametrize(
     "days,alert,interval",
