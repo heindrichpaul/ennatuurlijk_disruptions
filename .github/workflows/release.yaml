@@ -18,6 +18,15 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: |
+          pytest tests/ --cov=custom_components.ennatuurlijk_disruptions --cov-report=term-missing
+
       - name: Get version from manifest.json
         id: get_version
         run: |

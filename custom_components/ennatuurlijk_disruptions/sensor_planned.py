@@ -16,7 +16,7 @@ class EnnatuurlijkPlannedSensor(SensorEntity):
 
     @property
     def state(self):
-        planned = self.coordinator.data.get("planned", {})
+        planned = self.coordinator.planned
         today = datetime.now().date()
         dates = [d["date"] for d in planned.get("dates", []) if d.get("date")]
         future_dates = [d for d in dates if datetime.strptime(d, "%d-%m-%Y").date() >= today]
@@ -26,7 +26,7 @@ class EnnatuurlijkPlannedSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        planned = self.coordinator.data.get("planned", {})
+        planned = self.coordinator.planned
         today = datetime.now().date()
         dates = planned.get("dates", [])
         date_strs = [d["date"] for d in dates if d.get("date")]
@@ -73,14 +73,14 @@ class EnnatuurlijkPlannedAlertSensor(SensorEntity):
 
     @property
     def state(self):
-        planned = self.coordinator.data.get("planned", {})
+        planned = self.coordinator.planned
         state = "on" if planned.get("state") else "off"
         _LOGGER.debug(f"[{self._attr_unique_id}] State computed: {state}")
         return state
 
     @property
     def extra_state_attributes(self):
-        planned = self.coordinator.data.get("planned", {})
+        planned = self.coordinator.planned
         last_update = planned.get("last_update_date", None)
         _LOGGER.debug(f"[{self._attr_unique_id}] Last update value: {last_update} (raw: {repr(last_update)})")
         attrs = {

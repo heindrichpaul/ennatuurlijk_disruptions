@@ -1,4 +1,14 @@
-# Python
+# Local Python virtual environment
+.venv/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VS Code
+.vscode/# Python
 __pycache__/
 *.py[cod]
 *.pyo

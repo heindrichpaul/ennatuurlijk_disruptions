@@ -1,23 +1,28 @@
 # Ennatuurlijk Disruptions Integration
+
 [![HACS Validation](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hacs.yaml/badge.svg)](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hacs.yaml)
 [![Validate with hassfest](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/heindrichpaul/ennatuurlijk_disruptions/actions/workflows/hassfest.yaml)
 
 A modern, fully translated Home Assistant integration to monitor Ennatuurlijk disruptions for a specified town or postal code. Features modular sensor architecture, configurable options, and comprehensive Dutch/English translation support.
 
 ## Installation
+
 1. **HACS Installation**: Install via HACS by adding this repository as a custom repository: `https://github.com/heindrichpaul/ennatuurlijk_disruptions`.
 2. **Configuration**: Go to Settings > Devices & Services > Add Integration, select "Ennatuurlijk Disruptions", and enter your town and postal code.
 3. **Options**: After setup, click "Configure" to access additional options like alert sensor creation, solved disruption retention, and update interval settings.
 
 ## Sensors Created
+
 The integration creates the following sensors with rich attributes and translations:
 
 ### Main Sensors
+
 - **`sensor.ennatuurlijk_disruptions_planned`**: Planned disruptions (state: closest future date or None)
 - **`sensor.ennatuurlijk_disruptions_current`**: Current disruptions (state: closest date or None)  
 - **`sensor.ennatuurlijk_disruptions_solved`**: Solved disruptions (state: closest date or None)
 
 ### Alert Sensors (Optional)
+
 - **`sensor.ennatuurlijk_disruptions_planned_alert`**: Boolean sensor for planned disruptions (on/off)
 - **`sensor.ennatuurlijk_disruptions_current_alert`**: Boolean sensor for current disruptions (on/off)
 - **`sensor.ennatuurlijk_disruptions_solved_alert`**: Boolean sensor for solved disruptions (on/off)
@@ -57,7 +62,8 @@ After initial setup, click "Configure" on the integration to access:
 
 Each sensor provides rich attributes for automation and display purposes:
 
-### Main Sensors
+### Sensor Attributes Details
+
 - `state`: Closest relevant date (YYYY-MM-DD format) or None
 - `dates`: List of all disruptions with description, date, and (if available) a `link` to the disruption
 - `last_update`: Timestamp of last successful data fetch
@@ -75,7 +81,7 @@ sensor.ennatuurlijk_disruptions_planned:
       - description: "Example planned disruption 1"
         date: "23-06-2025"
         link: "https://ennatuurlijk.nl/storingen/1234"
-      - description: "Example planned disruption 2"  
+      - description: "Example planned disruption 2"
         date: "25-06-2025"
         link: null
     last_update: "2025-06-16 14:30"

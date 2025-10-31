@@ -14,7 +14,7 @@ class EnnatuurlijkCurrentSensor(SensorEntity):
 
     @property
     def state(self):
-        current = self.coordinator.data.get("current", {})
+        current = self.coordinator.current
         today = datetime.now().date()
         dates = [d["date"] for d in current.get("dates", []) if d.get("date")]
         if not dates:
@@ -28,7 +28,7 @@ class EnnatuurlijkCurrentSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        current = self.coordinator.data.get("current", {})
+        current = self.coordinator.current
         today = datetime.now().date()
         dates = current.get("dates", [])
         date_strs = [d["date"] for d in dates if d.get("date")]
@@ -74,14 +74,14 @@ class EnnatuurlijkCurrentAlertSensor(SensorEntity):
 
     @property
     def state(self):
-        current = self.coordinator.data.get("current", {})
+        current = self.coordinator.current
         state = "on" if current.get("state") else "off"
         _LOGGER.debug(f"[{self._attr_unique_id}] State computed: {state}")
         return state
 
     @property
     def extra_state_attributes(self):
-        current = self.coordinator.data.get("current", {})
+        current = self.coordinator.current
         last_update = current.get("last_update_date", None)
         _LOGGER.debug(f"[{self._attr_unique_id}] Last update value: {last_update} (raw: {repr(last_update)})")
         attrs = {
