@@ -99,14 +99,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.unique_id == "ennatuurlijk_global":
         _register_global_entry(hass, entry)
         return True
-    # If the global entry is not registered but this entry is global, register it
-    if "global_entry" not in hass.data[DOMAIN] and getattr(entry, "unique_id", None) == "ennatuurlijk_global":
-        _register_global_entry(hass, entry)
-        return True
+    # If the global entry is not registered, find and register it
     global_entry = hass.data[DOMAIN].get("global_entry")
     if not global_entry:
-        _LOGGER.error("No global config entry found. Please add the global settings first.")
-        return False
+        global_entry = _find_global_entry(hass)
+        if global_entry:
+            _register_global_entry(hass, global_entry)
+        else:
+            _LOGGER.error("No global config entry found. Please add the global settings first.")
+            return False
     return await _setup_subentry(hass, entry, global_entry)
 
 
