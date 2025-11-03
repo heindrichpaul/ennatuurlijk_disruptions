@@ -23,8 +23,8 @@ def _find_v1_global_entry(hass: HomeAssistant):
             return entry
     return None
 
-async def _create_global_entry(hass: HomeAssistant, data: dict):
-    """Create a new global config entry via migration flow."""
+async def _create_global_entry(hass: HomeAssistant, data: dict) -> ConfigEntry:
+    """Create a new global config entry via migration flow and return it."""
     await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": "migration"},
@@ -35,6 +35,14 @@ async def _create_global_entry(hass: HomeAssistant, data: dict):
         },
     )
     _LOGGER.info("Created new global config entry during migration.")
+    # Find and return the newly created global entry
+    global_entry = _find_global_entry(hass)
+    if not global_entry:
+        raise RuntimeError("Failed to create global config entry")
+    # Register it in hass.data
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN]["global_entry"] = global_entry
+    return global_entry
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -68,7 +76,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 break
         # If still no global entry, create one from this entry's settings
         if not global_entry:
-            await _create_global_entry(hass, data)
+            global_entry = await _create_global_entry(hass, data)
     # Now migrate this subentry
     postal_code = data.get("postal_code")
     if postal_code:

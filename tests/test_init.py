@@ -79,7 +79,20 @@ async def test_migrate_v1_subentry_creates_global_if_missing(hass):
         unique_id=None,
         entry_id="test-sub",
     )
-    hass.config_entries.async_entries.return_value = []
+    # Create a mock global entry that will be "found" after creation
+    global_entry = SimpleNamespace(
+        version=2,
+        data={"is_global": True, "days_to_keep_solved": 5, "update_interval": 42},
+        options={},
+        unique_id="ennatuurlijk_global",
+        entry_id="global-entry",
+    )
+    # Multiple calls: 1) check for global, 2) check for v1 entries, 3) find global after creation
+    hass.config_entries.async_entries.side_effect = [
+        [],  # First check for global entry
+        [],  # Check for v1 entries to migrate
+        [global_entry],  # Find global entry after creation
+    ]
     with patch.object(hass.config_entries.flow, "async_init", AsyncMock()) as flow_init:
         result = await integration.async_migrate_entry(hass, entry)
         assert result is True
