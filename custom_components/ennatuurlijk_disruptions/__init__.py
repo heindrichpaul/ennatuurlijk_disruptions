@@ -48,6 +48,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if data.get("is_global") or (not data.get("postal_code")):
         hass.config_entries.async_update_entry(entry, unique_id="ennatuurlijk_global")
         hass.config_entries.async_update_entry(entry, version=2, data=data, options=options)
+        # Register the global entry so subentries can find it
+        hass.data.setdefault(DOMAIN, {})
+        hass.data[DOMAIN]["global_entry"] = entry
         _LOGGER.info("Set unique_id to ennatuurlijk_global for global entry %s", entry.entry_id)
         _LOGGER.info("Migration of entry %s to version 2 complete", entry.entry_id)
         return True
