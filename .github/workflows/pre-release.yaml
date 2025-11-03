@@ -1,0 +1,98 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.head_commit.message, 'RELEASE')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Cache pytest cache
+        uses: actions/cache@v4
+        with:
+          path: .pytest_cache
+          key: ${{ runner.os }}-pytest-${{ hashFiles('tests/**/*.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pytest-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: |
+          pytest tests/ --cov=custom_components.ennatuurlijk_disruptions --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Get version from manifest.json
+        id: get_version
+        run: |
+          VERSION=$(jq -r .version custom_components/ennatuurlijk_disruptions/manifest.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine next beta tag
+        id: next_beta_tag
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TAG_PREFIX="$VERSION"b
+          LAST_BETA=$(git tag --list "${TAG_PREFIX}*" | sed -E "s/${TAG_PREFIX}([0-9]+)/\\1/" | sort -n | tail -1)
+          if [ -z "$LAST_BETA" ]; then
+            NEXT_BETA=1
+          else
+            NEXT_BETA=$((LAST_BETA + 1))
+          fi
+          NEXT_TAG="${TAG_PREFIX}${NEXT_BETA}"
+          echo "next_tag=$NEXT_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create HACS-style zip archive
+        run: |
+          cd custom_components/ennatuurlijk_disruptions
+          zip -r ../../ennatuurlijk_disruptions.zip .
+          cd ../../
+
+      - name: Read release notes
+        id: notes
+        run: |
+          RELEASE_NOTES=$(awk '/^## v${{ steps.next_beta_tag.outputs.next_tag }} Release Notes/,/^## v/{if (!/^## v/ || NR==1) print}' RELEASE_NOTES.md | sed '/^## v[0-9]/d')
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$RELEASE_NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Pre-Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.next_beta_tag.outputs.next_tag }}
+          name: Pre-release ${{ steps.next_beta_tag.outputs.next_tag }}
+          prerelease: true
+          body: ${{ steps.notes.outputs.release_notes }}
+          files: ennatuurlijk_disruptions.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
