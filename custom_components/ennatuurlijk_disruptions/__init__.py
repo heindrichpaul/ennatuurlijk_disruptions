@@ -14,10 +14,38 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.version == 1:
         data = dict(entry.data)
         options = dict(entry.options)
-        if data.get("is_global"):
+        # Check if a global entry already exists
+        global_entry = None
+        for e in hass.config_entries.async_entries(DOMAIN):
+            if e.unique_id == "ennatuurlijk_global":
+                global_entry = e
+                break
+        # If this entry is global, migrate as global
+        if data.get("is_global") or (not data.get("postal_code") and not global_entry):
             hass.config_entries.async_update_entry(entry, unique_id="ennatuurlijk_global")
             _LOGGER.info("Set unique_id to ennatuurlijk_global for global entry %s", entry.entry_id)
+        # If no global entry exists, create one with default/global settings
+        elif not global_entry:
+            global_data = {
+                "is_global": True,
+                "days_to_keep_solved": data.get("days_to_keep_solved", 7),
+                "update_interval": data.get("update_interval", 120),
+            }
+            hass.async_create_task(
+                hass.config_entries.flow.async_init(
+                    DOMAIN,
+                    context={"source": "migration"},
+                    data=global_data,
+                )
+            )
+            _LOGGER.info("Created new global config entry during migration.")
+            # Continue migrating this as subentry
+            postal_code = data.get("postal_code")
+            if postal_code:
+                hass.config_entries.async_update_entry(entry, unique_id=postal_code)
+                _LOGGER.info("Set unique_id to %s for subentry %s", postal_code, entry.entry_id)
         else:
+            # Subentry: set unique_id to postal_code
             postal_code = data.get("postal_code")
             if postal_code:
                 hass.config_entries.async_update_entry(entry, unique_id=postal_code)

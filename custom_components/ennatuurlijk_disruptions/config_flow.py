@@ -79,6 +79,23 @@ class EnnatuurlijkOptionsFlowHandler(config_entries.OptionsFlow):
 
 
 class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
+    async def async_step_migration(self, user_input=None):
+        """Handle migration step for global config entry creation."""
+        _LOGGER.info("Handling migration step for Ennatuurlijk Disruptions config flow.")
+        # Use defaults or values from user_input if provided
+        days_to_keep_solved = DEFAULT_DAYS_TO_KEEP_SOLVED
+        update_interval = DEFAULT_UPDATE_INTERVAL
+        if user_input is not None:
+            days_to_keep_solved = user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)
+            update_interval = user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
+        return self.async_create_entry(
+            title="Ennatuurlijk Disruptions (Global Settings)",
+            data={
+                "is_global": True,
+                CONF_DAYS_TO_KEEP_SOLVED: days_to_keep_solved,
+                CONF_UPDATE_INTERVAL: update_interval,
+            },
+        )
     VERSION = 2
 
     def __init__(self):
