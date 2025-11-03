@@ -47,6 +47,16 @@
         "location": {
             "initiate_flow": {
                 "user": "Add Location"
+            },
+            "step": {
+                "user": {
+                    "data": {
+                        "name": "Name",
+                        "town": "Town",
+                        "postal_code": "Postal Code"
+                    },
+                    "description": "Enter your town and postal code to monitor Ennatuurlijk disruptions. Both '1234 AB' and '1234AB' formats are accepted."
+                }
             }
         }
     },
