@@ -126,4 +126,11 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    
+    if unload_ok:
+        # Clear runtime_data to ensure clean reload
+        _LOGGER.debug("Clearing runtime_data for entry %s during unload", entry.entry_id)
+        entry.runtime_data = {}
+    
+    return unload_ok

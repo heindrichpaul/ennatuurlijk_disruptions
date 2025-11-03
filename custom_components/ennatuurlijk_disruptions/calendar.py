@@ -17,13 +17,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    # Only create the calendar entity once for the main entry
-    if "calendar_entity_created" in hass.data.setdefault(DOMAIN, {}):
-        _LOGGER.debug(
-            "Calendar entity already created, skipping for entry: %s", entry.entry_id
-        )
-        return
-
+    """Set up Ennatuurlijk Disruptions Calendar from config entry."""
     # Only create calendar if this entry has subentries (coordinators)
     if not hasattr(entry, "runtime_data") or not entry.runtime_data:
         _LOGGER.debug(
@@ -33,14 +27,14 @@ async def async_setup_entry(
         return
 
     _LOGGER.debug(
-        "Setting up single Ennatuurlijk Disruptions Calendar for the integration"
+        "Setting up single Ennatuurlijk Disruptions Calendar for entry %s", entry.entry_id
     )
     async_add_entities([EnnatuurlijkDisruptionsCalendar(hass, entry)])
-    hass.data[DOMAIN]["calendar_entity_created"] = True
 
 
 class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
     _attr_icon = "mdi:calendar-alert"
+    _attr_has_entity_name = False
 
     def __init__(self, hass, main_entry):
         super().__init__()
@@ -49,16 +43,7 @@ class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
         self._attr_unique_id = f"{DOMAIN}_calendar"
         self._attr_name = "Ennatuurlijk Disruptions Calendar"
         self._event_logs = {}  # {disruption_id: [log entries]}
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, "calendar")},
-            "name": "Ennatuurlijk Disruptions Calendar",
-            "manufacturer": "Ennatuurlijk",
-            "model": "Disruption Monitor",
-        }
-
-    @property
-    def has_entity_name(self) -> bool:
-        return True
+        # No device_info - this calendar is a standalone entity not linked to any device
 
     @property
     def event(self):
