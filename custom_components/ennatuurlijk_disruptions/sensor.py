@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .entity import EnnatuurlijkSensor
 from .sensor_types import SENSOR_TYPES
@@ -17,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Ennatuurlijk Disruptions sensors from a config entry."""
     _LOGGER.info(
@@ -52,7 +52,7 @@ async def async_setup_entry(
 
         _LOGGER.info("Adding %d sensors for subentry %s", len(sensors), subentry_id)
 
-        # Add entities with proper subentry association
-        async_add_entities(sensors)
+        # Add entities with proper subentry association (following NS pattern)
+        async_add_entities(sensors, config_subentry_id=subentry_id)
 
     _LOGGER.info("Entity setup completed for entry: %s", entry.entry_id)

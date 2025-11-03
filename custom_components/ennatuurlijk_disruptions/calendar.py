@@ -1,13 +1,22 @@
 """Calendar entity for Ennatuurlijk Disruptions."""
 
+from __future__ import annotations
+
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent  # type: ignore
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util  # type: ignore
 from datetime import datetime, timedelta
 import re
 from .const import DOMAIN, _LOGGER
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
     # Only create the calendar entity once for the main entry
     if "calendar_entity_created" in hass.data.setdefault(DOMAIN, {}):
         _LOGGER.debug(
