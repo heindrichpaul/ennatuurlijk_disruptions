@@ -26,16 +26,31 @@ async def async_setup_entry(
 
     # Get coordinators from runtime_data
     coordinators = entry.runtime_data
+    
+    _LOGGER.debug(
+        "Found %d coordinators for entry %s: %s", 
+        len(coordinators), 
+        entry.entry_id,
+        list(coordinators.keys())
+    )
+
+    if not coordinators:
+        _LOGGER.info("No location subentries found, no sensors to create for entry: %s", entry.entry_id)
+        return
 
     for subentry_id, coordinator in coordinators.items():
         # Get the subentry object
         subentry = entry.subentries[subentry_id]
+
+        _LOGGER.info("Creating sensors for subentry %s (%s)", subentry_id, subentry.data.get("town", "Unknown"))
 
         # Create sensors for this subentry
         sensors = [
             EnnatuurlijkSensor(coordinator, subentry, description)
             for description in SENSOR_TYPES
         ]
+
+        _LOGGER.info("Adding %d sensors for subentry %s", len(sensors), subentry_id)
 
         # Add entities with proper subentry association
         async_add_entities(sensors)

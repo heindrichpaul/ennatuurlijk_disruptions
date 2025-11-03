@@ -43,6 +43,12 @@
             "reconfigure_successful": "Configuration updated successfully."
         }
     },
+    "subentry": {
+        "location": {
+            "name": "Add Location",
+            "description": "Monitor disruptions for a specific location"
+        }
+    },
     "options": {
         "step": {
             "init": {

@@ -31,6 +31,17 @@ async def async_setup_entry(
 
     # Get coordinators from runtime_data
     coordinators = entry.runtime_data
+    
+    _LOGGER.debug(
+        "Found %d coordinators for binary sensors, entry %s: %s", 
+        len(coordinators), 
+        entry.entry_id,
+        list(coordinators.keys())
+    )
+
+    if not coordinators:
+        _LOGGER.info("No location subentries found, no binary sensors to create for entry: %s", entry.entry_id)
+        return
 
     for subentry_id, coordinator in coordinators.items():
         # Get the subentry object
@@ -46,11 +57,15 @@ async def async_setup_entry(
             _LOGGER.info("Alert sensors disabled for subentry: %s", subentry_id)
             continue
 
+        _LOGGER.info("Creating binary sensors for subentry %s (%s)", subentry_id, subentry.data.get("town", "Unknown"))
+
         # Create binary sensors for this subentry
         sensors = [
             EnnatuurlijkBinarySensor(coordinator, subentry, description)
             for description in BINARY_SENSOR_TYPES
         ]
+
+        _LOGGER.info("Adding %d binary sensors for subentry %s", len(sensors), subentry_id)
 
         async_add_entities(sensors)
 

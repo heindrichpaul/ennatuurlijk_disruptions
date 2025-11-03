@@ -346,15 +346,6 @@ class LocationSubentryFlowHandler(ConfigSubentryFlow):
                         CONF_NAME: name,
                         CONF_TOWN: town,
                         CONF_POSTAL_CODE: postal_code,
-                        CONF_DAYS_TO_KEEP_SOLVED: user_input.get(
-                            CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED
-                        ),
-                        CONF_CREATE_ALERT_SENSORS: user_input.get(
-                            CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS
-                        ),
-                        CONF_UPDATE_INTERVAL: user_input.get(
-                            CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
-                        ),
                     },
                 )
 
@@ -365,7 +356,6 @@ class LocationSubentryFlowHandler(ConfigSubentryFlow):
                     vol.Required(CONF_NAME, default="Ennatuurlijk Disruptions"): str,
                     vol.Required(CONF_TOWN): str,
                     vol.Required(CONF_POSTAL_CODE): str,
-                    **SchemaHelper.get_common_options(),
                 }
             ),
             errors=errors,

@@ -365,20 +365,31 @@ async def fetch_disruption_section(hass, section: str, town: str, postal_code: s
 # Coordinator Class
 
 
-def _get_update_interval_minutes(entry) -> int:
-    """Return the update interval from entry options or data, or default."""
-    return entry.options.get(
-        CONF_UPDATE_INTERVAL,
-        entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
-    )
+def _get_update_interval_minutes(entry, main_entry=None) -> int:
+    """Return the update interval from main entry options or default."""
+    # Always prefer main entry options for global settings
+    if main_entry and hasattr(main_entry, 'options') and main_entry.options:
+        return main_entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
+    
+    # Fallback to entry options for backward compatibility
+    if hasattr(entry, 'options') and entry.options:
+        return entry.options.get(
+            CONF_UPDATE_INTERVAL,
+            entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
+        )
+    else:
+        # For subentries, check data as last resort
+        return entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
 
 
 class EnnatuurlijkCoordinator(DataUpdateCoordinator):
     """Coordinator for Ennatuurlijk disruptions integration."""
 
-    def __init__(self, hass: HomeAssistant, entry) -> None:
+    def __init__(self, hass: HomeAssistant, entry, main_entry=None) -> None:
         """Initialize the coordinator."""
-        update_interval = timedelta(minutes=_get_update_interval_minutes(entry))
+        # Use main entry for global settings
+        self.main_entry = main_entry
+        update_interval = timedelta(minutes=_get_update_interval_minutes(entry, main_entry))
         super().__init__(
             hass,
             _LOGGER,
@@ -389,11 +400,20 @@ class EnnatuurlijkCoordinator(DataUpdateCoordinator):
 
     @property
     def days_to_keep_solved(self) -> int:
-        """Return the days to keep solved disruptions from entry options or data, or default."""
-        return self.entry.options.get(
-            CONF_DAYS_TO_KEEP_SOLVED,
-            self.entry.data.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
-        )
+        """Return the days to keep solved disruptions from main entry options or default."""
+        # Always prefer main entry options for global settings
+        if self.main_entry and hasattr(self.main_entry, 'options') and self.main_entry.options:
+            return self.main_entry.options.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)
+        
+        # Fallback to entry options for backward compatibility
+        if hasattr(self.entry, 'options') and self.entry.options:
+            return self.entry.options.get(
+                CONF_DAYS_TO_KEEP_SOLVED,
+                self.entry.data.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
+            )
+        else:
+            # For subentries, check data as last resort
+            return self.entry.data.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)
 
     @property
     def planned(self):
@@ -483,6 +503,6 @@ class EnnatuurlijkCoordinator(DataUpdateCoordinator):
             }
 
 
-def create_coordinator(hass: HomeAssistant, entry) -> EnnatuurlijkCoordinator:
+def create_coordinator(hass: HomeAssistant, entry, main_entry=None) -> EnnatuurlijkCoordinator:
     """Create the coordinator."""
-    return EnnatuurlijkCoordinator(hass, entry)
+    return EnnatuurlijkCoordinator(hass, entry, main_entry)

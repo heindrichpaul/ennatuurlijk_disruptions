@@ -83,24 +83,45 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Ennatuurlijk Disruptions from a config entry."""
+    _LOGGER.info("Setting up Ennatuurlijk Disruptions entry: %s (title: %s)", entry.entry_id, entry.title)
+    _LOGGER.debug("Entry data: %s", entry.data)
+    _LOGGER.debug("Entry options: %s", entry.options)
+    _LOGGER.debug("Entry subentries: %s", list(entry.subentries.keys()) if entry.subentries else "None")
+    
     coordinators: dict[str, object] = {}
 
     # Set up coordinators for all existing location subentries
     for subentry_id, subentry in entry.subentries.items():
+        _LOGGER.debug("Processing subentry %s: type=%s, data=%s", subentry_id, subentry.subentry_type, subentry.data)
         if subentry.subentry_type == "location":
-            # Create coordinator from subentry (contains all location settings)
-            coordinator = create_coordinator(hass, subentry)
+            # Create coordinator from subentry, passing main entry for global settings
+            coordinator = create_coordinator(hass, subentry, main_entry=entry)
+            _LOGGER.info("Created coordinator for subentry %s (%s %s)", subentry_id, subentry.data.get("town"), subentry.data.get("postal_code"))
             _LOGGER.debug("Initial data refresh for subentry %s", subentry_id)
             await coordinator.async_config_entry_first_refresh()
             _LOGGER.debug("Initial refresh successful for subentry %s", subentry_id)
             coordinators[subentry_id] = coordinator
 
+    _LOGGER.info("Created %d coordinators for entry %s", len(coordinators), entry.entry_id)
+
     # Store coordinators in runtime_data
     entry.runtime_data = coordinators
 
+    # Add reload listener for when subentries are added/removed
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
     # Set up platforms for all subentries
+    _LOGGER.info("Setting up platforms: %s", PLATFORMS)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    
+    _LOGGER.info("Setup completed for entry %s", entry.entry_id)
     return True
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload integration when subentries are added/removed."""
+    _LOGGER.info("Reloading Ennatuurlijk Disruptions entry due to subentry changes: %s", entry.entry_id)
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
