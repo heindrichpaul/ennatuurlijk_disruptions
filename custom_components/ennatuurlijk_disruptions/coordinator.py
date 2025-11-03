@@ -450,7 +450,6 @@ class EnnatuurlijkCoordinator(DataUpdateCoordinator):
             )
             # Purge solved disruptions older than days_to_keep_solved
             if solved and solved.get("dates"):
-                from datetime import datetime, timedelta
                 keep_days = self.days_to_keep_solved
                 now = datetime.now().date()
                 filtered = []

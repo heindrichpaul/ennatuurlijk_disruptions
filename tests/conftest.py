@@ -4,6 +4,7 @@ from __future__ import annotations
 import types
 from collections.abc import Generator
 from unittest.mock import AsyncMock, patch
+import os
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry  # type: ignore
@@ -66,8 +67,6 @@ def load_fixture():
 
     def _load_fixture(filename: str) -> str:
         """Load fixture data from file."""
-        import os
-
         path = os.path.join(os.path.dirname(__file__), "fixtures", filename)
         with open(path, encoding="utf-8") as file:
             return file.read()

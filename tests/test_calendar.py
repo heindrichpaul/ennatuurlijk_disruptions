@@ -2,11 +2,11 @@
 import pytest
 from datetime import date
 from custom_components.ennatuurlijk_disruptions.calendar import EnnatuurlijkDisruptionsCalendar
+from custom_components.ennatuurlijk_disruptions.coordinator import EnnatuurlijkCoordinator
 
 @pytest.fixture
 async def setup_calendar_env(hass, mockEntry, mock_global_config_entry, mock_aiohttp_session):
     """Fixture to set up hass.data and calendar for all calendar tests."""
-    from custom_components.ennatuurlijk_disruptions.coordinator import EnnatuurlijkCoordinator
     mockEntry.add_to_hass(hass)
     coordinator = EnnatuurlijkCoordinator(hass, mockEntry)
     await coordinator.async_refresh()

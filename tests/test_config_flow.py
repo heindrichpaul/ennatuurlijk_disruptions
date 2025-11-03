@@ -5,7 +5,9 @@ from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
-
+from custom_components.ennatuurlijk_disruptions.config_flow import (
+    EnnatuurlijkOptionsFlowHandler,
+)
 from custom_components.ennatuurlijk_disruptions.const import (
     DOMAIN,
     CONF_TOWN,
@@ -467,9 +469,7 @@ async def test_options_handler_config_entry_property(
     hass: HomeAssistant, enable_custom_integrations, mock_requests_get, subentry
 ):
     """Test that OptionsFlowHandler config_entry property works correctly."""
-    from custom_components.ennatuurlijk_disruptions.config_flow import (
-        EnnatuurlijkOptionsFlowHandler,
-    )
+
     handler = EnnatuurlijkOptionsFlowHandler(subentry)
     assert handler.config_entry == subentry
     assert handler.config_entry.entry_id == subentry.entry_id
