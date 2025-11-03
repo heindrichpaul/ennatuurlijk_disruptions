@@ -3,6 +3,7 @@
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
+
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.ennatuurlijk_disruptions.config_flow import (
@@ -20,6 +21,7 @@ from custom_components.ennatuurlijk_disruptions.const import (
     DEFAULT_UPDATE_INTERVAL,
 )
 import pytest
+import itertools
 
 
 """
@@ -44,9 +46,17 @@ async def global_config_entry(hass):
     )
     return hass.config_entries.async_entries(DOMAIN)[0]
 
+
+# Helper to generate unique postal codes for subentry tests
+_postal_code_counter = itertools.count(5045)
+
+def get_unique_postal_code():
+    return f"{next(_postal_code_counter)}AB"
+
 @pytest.fixture
 async def subentry(hass, global_config_entry):
-    """Create a subentry for tests."""
+    """Create a subentry for tests with a unique postal code."""
+    postal_code = get_unique_postal_code()
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "add_subentry"}
     )
@@ -55,16 +65,19 @@ async def subentry(hass, global_config_entry):
         user_input={
             CONF_NAME: "Test Entry",
             CONF_TOWN: "Tilburg",
-            CONF_POSTAL_CODE: "5045AB",
+            CONF_POSTAL_CODE: postal_code,
         },
     )
     return hass.config_entries.async_entries(DOMAIN)[-1]
 
 
     # Helper for config flow steps
+
+# Helper for config flow steps with unique postal code
 async def create_subentry(
-    hass, name, town, postal_code, days=None, alert=None, interval=None
+    hass, name, town, days=None, alert=None, interval=None
 ):
+    postal_code = get_unique_postal_code()
     user_input = {
         CONF_NAME: name,
         CONF_TOWN: town,
@@ -112,7 +125,8 @@ async def test_user_flow_success(
         },
     )
     assert result["type"] == FlowResultType.CREATE_ENTRY
-    # Add subentry
+    # Add subentry with unique postal code
+    unique_postal_code = get_unique_postal_code()
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "add_subentry"}
     )
@@ -123,7 +137,7 @@ async def test_user_flow_success(
         user_input={
             CONF_NAME: "Test Disruptions",
             CONF_TOWN: "Amsterdam",
-            CONF_POSTAL_CODE: "1012AB",
+            CONF_POSTAL_CODE: unique_postal_code,
             CONF_DAYS_TO_KEEP_SOLVED: 7,
             CONF_CREATE_ALERT_SENSORS: True,
             CONF_UPDATE_INTERVAL: 15,
@@ -134,7 +148,7 @@ async def test_user_flow_success(
     assert result["data"] == {
         CONF_NAME: "Test Disruptions",
         CONF_TOWN: "Amsterdam",
-        CONF_POSTAL_CODE: "1012AB",
+        CONF_POSTAL_CODE: unique_postal_code,
     }
     assert result["options"] == {
         CONF_DAYS_TO_KEEP_SOLVED: 7,
@@ -156,6 +170,12 @@ async def test_user_flow_success(
 async def test_user_flow_postal_code_normalization(
     hass, enable_custom_integrations, mock_requests_get, global_config_entry, postal_code, expected
 ):
+    # Use a unique valid postal code for each test run if expected is not None
+    test_postal_code = postal_code
+    if expected is not None:
+        # Generate a unique valid postal code for this test
+        test_postal_code = get_unique_postal_code()
+        expected = test_postal_code.replace(" ", "").upper()
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "add_subentry"}
     )
@@ -164,7 +184,7 @@ async def test_user_flow_postal_code_normalization(
         user_input={
             CONF_NAME: "Test Disruptions",
             CONF_TOWN: "Rotterdam",
-            CONF_POSTAL_CODE: postal_code,
+            CONF_POSTAL_CODE: test_postal_code,
         },
     )
     if expected is None:
@@ -190,6 +210,7 @@ async def test_user_flow_default_values(
         },
     )
     # Add subentry with only required fields
+    unique_postal_code = get_unique_postal_code()
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "add_subentry"}
     )
@@ -198,7 +219,7 @@ async def test_user_flow_default_values(
         user_input={
             CONF_NAME: "Minimal Config",
             CONF_TOWN: "Breda",
-            CONF_POSTAL_CODE: "4811AA",
+            CONF_POSTAL_CODE: unique_postal_code,
         },
     )
     assert result["type"] == FlowResultType.CREATE_ENTRY
@@ -265,7 +286,8 @@ async def test_options_flow_uses_defaults(
     hass: HomeAssistant, enable_custom_integrations, mock_requests_get, global_config_entry
 ):
     """Test that options flow uses default values when fields are omitted."""
-    entry = await create_subentry(hass, "Test Entry", "Tilburg", "5045AB")
+    # Use the helper to create a subentry with only required fields
+    entry = await create_subentry(hass, "Test Entry", "Tilburg")
     entry = hass.config_entries.async_entries(DOMAIN)[-1]
     result = await run_options_flow(hass, entry, user_input={})
     assert result["type"] == FlowResultType.CREATE_ENTRY

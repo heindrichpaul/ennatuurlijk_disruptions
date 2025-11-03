@@ -79,6 +79,24 @@ class EnnatuurlijkOptionsFlowHandler(config_entries.OptionsFlow):
 
 
 class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
+
+    def _normalize_postal_code(self, postal_code: str) -> str:
+        """Normalize postal code by removing spaces and uppercasing."""
+        return postal_code.replace(" ", "").upper()
+
+    def _is_valid_postal_code(self, postal_code: str) -> bool:
+        """Check if postal code matches Dutch format 1234AB."""
+        return bool(re.match(r"^\d{4}[A-Z]{2}$", postal_code))
+
+    def _is_duplicate_postal_code(self, postal_code: str, exclude_entry_id: "str | None" = None) -> bool:
+        """Check if a subentry with this postal code already exists, excluding a given entry_id if provided."""
+        for entry in self._async_current_entries():
+            if exclude_entry_id and entry.entry_id == exclude_entry_id:
+                continue
+            if entry.unique_id == postal_code:
+                return True
+        return False
+
     async def async_step_migration(self, user_input=None):
         """Handle migration step for global config entry creation."""
         _LOGGER.info("Handling migration step for Ennatuurlijk Disruptions config flow.")
@@ -104,12 +122,15 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
         self._global_entry = None
 
     async def async_step_user(self, user_input=None):
-    # Global config entry step
+        # Global config entry step
         errors = {}
         if user_input is not None:
             # Only one global config entry allowed
             await self.async_set_unique_id("ennatuurlijk_global")
-            self._abort_if_unique_id_configured()
+            # Only abort if a global entry already exists
+            for entry in self._async_current_entries():
+                if entry.unique_id == "ennatuurlijk_global":
+                    return self.async_abort(reason="already_configured")
             return self.async_create_entry(
                 title="Ennatuurlijk Disruptions (Global Settings)",
                 data={
@@ -129,20 +150,21 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_add_subentry(self, user_input=None):
-    # Subentry step (postal code/town)
+        # Subentry step (postal code/town)
         errors = {}
         if user_input is not None:
             town = user_input[CONF_TOWN]
-            postal_code = user_input[CONF_POSTAL_CODE].replace(" ", "").upper()
+            postal_code = self._normalize_postal_code(user_input[CONF_POSTAL_CODE])
             name = user_input.get(CONF_NAME, f"Ennatuurlijk Disruptions {town}")
             days_to_keep_solved = user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)
             create_alert_sensors = user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
             update_interval = user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
-            if not re.match(r"^\d{4}[A-Z]{2}$", postal_code):
+            if not self._is_valid_postal_code(postal_code):
                 errors["postal_code"] = "invalid_postal_code"
             if not errors:
                 await self.async_set_unique_id(postal_code)
-                self._abort_if_unique_id_configured()
+                if self._is_duplicate_postal_code(postal_code):
+                    return self.async_abort(reason="already_configured")
                 return self.async_create_entry(
                     title=name,
                     data={
@@ -196,26 +218,28 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
 
         errors = {}
         if user_input is not None:
-            # Validate postal code
-            postal_code = user_input[CONF_POSTAL_CODE]
-            if not re.match(r"^\d{4}[A-Z]{2}$", postal_code):
+            # Validate and normalize postal code
+            postal_code = self._normalize_postal_code(user_input[CONF_POSTAL_CODE])
+            if not self._is_valid_postal_code(postal_code):
                 errors["postal_code"] = "invalid_postal_code"
                 _LOGGER.warning(
                     "Invalid postal code format during reconfigure: %s", postal_code
                 )
 
             if not errors:
-                # Check for duplicate postal code
+                # Check for duplicate postal code among other entries (exclude self)
+                if self._is_duplicate_postal_code(postal_code, exclude_entry_id=config_entry.entry_id):
+                    return self.async_abort(reason="already_configured")
+
+                # Update unique_id if postal code changed
                 if postal_code != config_entry.data.get(CONF_POSTAL_CODE):
                     await self.async_set_unique_id(postal_code)
-                    self._abort_if_unique_id_configured()
 
                 _LOGGER.info(
                     "Updating config entry for %s, %s",
                     user_input[CONF_TOWN],
                     user_input[CONF_POSTAL_CODE],
                 )
-                # Update unique_id if postal code changed
                 self.hass.config_entries.async_update_entry(
                     config_entry, unique_id=postal_code
                 )
@@ -226,7 +250,7 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
                     data={
                         CONF_NAME: user_input[CONF_NAME],
                         CONF_TOWN: user_input[CONF_TOWN],
-                        CONF_POSTAL_CODE: user_input[CONF_POSTAL_CODE],
+                        CONF_POSTAL_CODE: postal_code,
                     },
                     options={
                         CONF_DAYS_TO_KEEP_SOLVED: user_input.get(
