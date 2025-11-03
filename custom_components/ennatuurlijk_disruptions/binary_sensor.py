@@ -9,10 +9,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     CONF_CREATE_ALERT_SENSORS,
     DEFAULT_CREATE_ALERT_SENSORS,
-    _LOGGER,
 )
 from .entity import EnnatuurlijkBinarySensor
 from .binary_sensor_types import BINARY_SENSOR_TYPES
+
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -26,17 +29,17 @@ async def async_setup_entry(
         entry.entry_id,
     )
 
-    # Get coordinators for all subentries
+    # Get coordinators from runtime_data
     coordinators = entry.runtime_data
 
     for subentry_id, coordinator in coordinators.items():
         # Get the subentry object
         subentry = entry.subentries[subentry_id]
 
-        # Check if alert sensors are enabled for this subentry
-        create_alert_sensors = subentry.options.get(
+        # Check if alert sensors are enabled (get from main entry options)
+        create_alert_sensors = entry.options.get(
             CONF_CREATE_ALERT_SENSORS,
-            subentry.data.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS),
+            entry.data.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS),
         )
 
         if not create_alert_sensors:

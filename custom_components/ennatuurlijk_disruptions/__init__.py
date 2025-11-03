@@ -1,10 +1,20 @@
 """Ennatuurlijk Disruptions integration: subentry setup and migration."""
 
+from __future__ import annotations
+
+import logging
+
 from homeassistant.config_entries import ConfigEntry  # type: ignore
 from homeassistant.core import HomeAssistant  # type: ignore
 from homeassistant.helpers import config_validation as cv  # type: ignore
-from .const import DOMAIN, _LOGGER
+from homeassistant.const import Platform
+
+from .const import DOMAIN
 from .coordinator import create_coordinator
+
+_LOGGER = logging.getLogger(__name__)
+
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CALENDAR]
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -72,12 +82,10 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up config entry."""
-    hass.data.setdefault(DOMAIN, {})
-
-    # Set up coordinators for all existing location subentries (like NS pattern)
+    """Set up Ennatuurlijk Disruptions from a config entry."""
     coordinators: dict[str, object] = {}
 
+    # Set up coordinators for all existing location subentries
     for subentry_id, subentry in entry.subentries.items():
         if subentry.subentry_type == "location":
             # Create coordinator from subentry (contains all location settings)
@@ -87,20 +95,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.debug("Initial refresh successful for subentry %s", subentry_id)
             coordinators[subentry_id] = coordinator
 
+    # Store coordinators in runtime_data
     entry.runtime_data = coordinators
 
     # Set up platforms for all subentries
-    await hass.config_entries.async_forward_entry_setups(
-        entry, ["sensor", "binary_sensor", "calendar"]
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry and clean up runtime data."""
-    unload_ok = await hass.config_entries.async_unload_platforms(
-        entry, ["sensor", "binary_sensor", "calendar"]
-    )
-    if unload_ok and hasattr(entry, "runtime_data"):
-        entry.runtime_data = None
-    return unload_ok
+    """Unload a config entry."""
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

@@ -1,14 +1,17 @@
+"""DataUpdateCoordinator for Ennatuurlijk Disruptions."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import logging
 
 from bs4 import BeautifulSoup
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
     DOMAIN,
-    _LOGGER,
     CONF_TOWN,
     CONF_POSTAL_CODE,
     CONF_UPDATE_INTERVAL,
@@ -19,6 +22,11 @@ from .const import (
     ENNATUURLIJK_DISRUPTIONS_URL,
     ENNATUURLIJK_HEADERS,
 )
+
+_LOGGER = logging.getLogger(__name__)
+
+# Type definition
+type EnnatuurlijkConfigEntry = ConfigEntry[dict[str, "EnnatuurlijkCoordinator"]]
 
 
 # HTML Parsing Functions

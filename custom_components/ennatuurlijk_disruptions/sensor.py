@@ -6,9 +6,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import _LOGGER
 from .entity import EnnatuurlijkSensor
 from .sensor_types import SENSOR_TYPES
+
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -21,7 +24,7 @@ async def async_setup_entry(
         "Setting up Ennatuurlijk Disruptions sensors for entry: %s", entry.entry_id
     )
 
-    # Get coordinators for all subentries (like NS pattern)
+    # Get coordinators from runtime_data
     coordinators = entry.runtime_data
 
     for subentry_id, coordinator in coordinators.items():

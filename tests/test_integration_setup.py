@@ -1,4 +1,4 @@
-"""Integration-level tests following HA core patterns (NS examples)."""
+"""Integration-level tests following HA core patterns"""
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -57,11 +57,16 @@ async def test_setup_creates_coordinator_and_sensors(
 
     # Check that entry is loaded successfully
     assert main_entry.state.name == "LOADED"
-
-    # With no subentries, no coordinators should be created
-    assert hasattr(main_entry, "runtime_data")
-    assert main_entry.runtime_data == {}
-
+    
+    # Check coordinators are stored properly (either in runtime_data or hass.data fallback)
+    if hasattr(main_entry, "runtime_data"):
+        # Newer Home Assistant versions with runtime_data support
+        assert main_entry.runtime_data == {}
+    else:
+        # Older Home Assistant versions use hass.data fallback
+        assert main_entry.entry_id in hass.data[DOMAIN]
+        assert hass.data[DOMAIN][main_entry.entry_id]["coordinators"] == {}
+    
     # The integration should still set up platforms (sensor, binary_sensor, calendar)
     # but no entities will be created since there are no location subentries
     # This tests that the basic integration setup works with v2 main entries
