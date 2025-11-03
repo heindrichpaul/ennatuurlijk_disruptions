@@ -41,9 +41,11 @@
         "abort": {
             "already_configured": "Deze postcode is al geconfigureerd.",
             "reconfigure_successful": "Configuratie succesvol bijgewerkt."
-        },
-        "add_subentry_type": {
-            "location": "Locatie Toevoegen"
+        }
+    },
+    "config_subentries": {
+        "location": {
+            "add_subentry_type": "Locatie Toevoegen"
         }
     },
     "entity": {

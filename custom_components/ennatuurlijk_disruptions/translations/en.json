@@ -41,9 +41,11 @@
         "abort": {
             "already_configured": "This postal code is already configured.",
             "reconfigure_successful": "Configuration updated successfully."
-        },
-        "add_subentry_type": {
-            "location": "Add Location"
+        }
+    },
+    "config_subentries": {
+        "location": {
+            "add_subentry_type": "Add Location"
         }
     },
     "options": {
