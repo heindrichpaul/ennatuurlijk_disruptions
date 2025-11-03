@@ -12,7 +12,9 @@ from .const import (
     CONF_TOWN,
     CONF_POSTAL_CODE,
     CONF_UPDATE_INTERVAL,
+    CONF_DAYS_TO_KEEP_SOLVED,
     DEFAULT_UPDATE_INTERVAL,
+    DEFAULT_DAYS_TO_KEEP_SOLVED,
     MONTH_TO_NUMBER,
     ENNATUURLIJK_DISRUPTIONS_URL,
     ENNATUURLIJK_HEADERS,
@@ -355,28 +357,20 @@ async def fetch_disruption_section(hass, section: str, town: str, postal_code: s
 # Coordinator Class
 
 
-
-def _get_update_interval_minutes(entry, global_entry=None) -> int:
-    """Return the update interval from global entry if present, else from entry, or default."""
-    if global_entry is not None:
-        # Prefer options, then data
-        return global_entry.options.get(
-            CONF_UPDATE_INTERVAL,
-            global_entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
-        )
+def _get_update_interval_minutes(entry) -> int:
+    """Return the update interval from entry options or data, or default."""
     return entry.options.get(
         CONF_UPDATE_INTERVAL,
         entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
     )
 
 
-
 class EnnatuurlijkCoordinator(DataUpdateCoordinator):
     """Coordinator for Ennatuurlijk disruptions integration."""
 
-    def __init__(self, hass: HomeAssistant, entry, global_entry=None) -> None:
-        """Initialize the coordinator. Use global_entry for global settings if provided."""
-        update_interval = timedelta(minutes=_get_update_interval_minutes(entry, global_entry))
+    def __init__(self, hass: HomeAssistant, entry) -> None:
+        """Initialize the coordinator."""
+        update_interval = timedelta(minutes=_get_update_interval_minutes(entry))
         super().__init__(
             hass,
             _LOGGER,
@@ -384,16 +378,13 @@ class EnnatuurlijkCoordinator(DataUpdateCoordinator):
             update_interval=update_interval,
         )
         self.entry = entry
-        self.global_entry = global_entry
 
     @property
     def days_to_keep_solved(self) -> int:
-        """Return the days to keep solved disruptions from global entry if present, else from entry, or default."""
-        entry = self.global_entry if self.global_entry is not None else self.entry
-        # Prefer options, then data
-        return entry.options.get(
-            "days_to_keep_solved",
-            entry.data.get("days_to_keep_solved", 7),
+        """Return the days to keep solved disruptions from entry options or data, or default."""
+        return self.entry.options.get(
+            CONF_DAYS_TO_KEEP_SOLVED,
+            self.entry.data.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
         )
 
     @property
@@ -484,6 +475,6 @@ class EnnatuurlijkCoordinator(DataUpdateCoordinator):
             }
 
 
-def create_coordinator(hass: HomeAssistant, entry, global_entry=None) -> EnnatuurlijkCoordinator:
-    """Create the EnnatuurlijkCoordinator for this config entry, using global_entry for settings if provided."""
-    return EnnatuurlijkCoordinator(hass, entry, global_entry=global_entry)
+def create_coordinator(hass: HomeAssistant, entry) -> EnnatuurlijkCoordinator:
+    """Create the coordinator."""
+    return EnnatuurlijkCoordinator(hass, entry)

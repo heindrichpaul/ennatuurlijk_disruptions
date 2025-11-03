@@ -7,7 +7,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
-    DOMAIN,
     CONF_CREATE_ALERT_SENSORS,
     DEFAULT_CREATE_ALERT_SENSORS,
     _LOGGER,
@@ -23,24 +22,33 @@ async def async_setup_entry(
 ) -> None:
     """Set up Ennatuurlijk Disruptions binary sensors from a config entry."""
     _LOGGER.info(
-        "Setting up Ennatuurlijk Disruptions binary sensor for entry: %s",
+        "Setting up Ennatuurlijk Disruptions binary sensors for entry: %s",
         entry.entry_id,
     )
 
-    # Check if alert sensors are enabled
-    create_alert_sensors = (
-        entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
-        if hasattr(entry, "options")
-        else DEFAULT_CREATE_ALERT_SENSORS
-    )
+    # Get coordinators for all subentries
+    coordinators = entry.runtime_data
 
-    if not create_alert_sensors:
-        _LOGGER.info("Alert sensors disabled for entry: %s", entry.entry_id)
-        return
+    for subentry_id, coordinator in coordinators.items():
+        # Get the subentry object
+        subentry = entry.subentries[subentry_id]
 
-    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+        # Check if alert sensors are enabled for this subentry
+        create_alert_sensors = subentry.options.get(
+            CONF_CREATE_ALERT_SENSORS,
+            subentry.data.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS),
+        )
 
-    sensors = [EnnatuurlijkBinarySensor(coordinator, entry, description) for description in BINARY_SENSOR_TYPES]
+        if not create_alert_sensors:
+            _LOGGER.info("Alert sensors disabled for subentry: %s", subentry_id)
+            continue
 
-    async_add_entities(sensors)
+        # Create binary sensors for this subentry
+        sensors = [
+            EnnatuurlijkBinarySensor(coordinator, subentry, description)
+            for description in BINARY_SENSOR_TYPES
+        ]
+
+        async_add_entities(sensors)
+
     _LOGGER.info("Binary sensor setup completed for entry: %s", entry.entry_id)

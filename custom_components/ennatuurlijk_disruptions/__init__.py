@@ -1,4 +1,4 @@
-"""Ennatuurlijk Disruptions integration: setup, migration, and entry management."""
+"""Ennatuurlijk Disruptions integration: subentry setup and migration."""
 
 from homeassistant.config_entries import ConfigEntry  # type: ignore
 from homeassistant.core import HomeAssistant  # type: ignore
@@ -7,98 +7,64 @@ from .const import DOMAIN, _LOGGER
 from .coordinator import create_coordinator
 
 
-def _find_global_entry(hass: HomeAssistant):
-    """Return the global config entry if present, else None."""
-    for entry in hass.config_entries.async_entries(DOMAIN):
-        if entry.unique_id == "ennatuurlijk_global":
-            return entry
-    return None
-
-
-def _find_v1_global_entry(hass: HomeAssistant):
-    """Return a v1 global config entry if present, else None."""
-    for entry in hass.config_entries.async_entries(DOMAIN):
-        data = dict(entry.data)
-        if entry.version == 1 and (
-            data.get("is_global") or not data.get("postal_code")
-        ):
-            return entry
-    return None
-
-
-async def _create_global_entry(hass: HomeAssistant, data: dict) -> ConfigEntry:
-    """Create a new global config entry via migration flow and return it."""
-    await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": "migration"},
-        data={
-            "is_global": True,
-            "days_to_keep_solved": data.get("days_to_keep_solved", 7),
-            "update_interval": data.get("update_interval", 120),
-        },
-    )
-    _LOGGER.info("Created new global config entry during migration.")
-    # Find and return the newly created global entry
-    global_entry = _find_global_entry(hass)
-    if not global_entry:
-        raise RuntimeError("Failed to create global config entry")
-    # Register it in hass.data
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN]["global_entry"] = global_entry
-    return global_entry
-
-
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate config entries from v1 to v2 (global+subentry)."""
+    """Migrate config entries from v1 to v2 (subentry pattern)."""
     _LOGGER.info(
         "Migrating config entry %s from version %s", entry.entry_id, entry.version
     )
+
     if entry.version != 1:
         return True
-    data = dict(entry.data)
-    options = dict(entry.options)
-    # Migrate global entry
-    if data.get("is_global") or (not data.get("postal_code")):
-        hass.config_entries.async_update_entry(entry, unique_id="ennatuurlijk_global")
-        hass.config_entries.async_update_entry(
-            entry, version=2, data=data, options=options
-        )
-        # Register the global entry so subentries can find it
-        hass.data.setdefault(DOMAIN, {})
-        hass.data[DOMAIN]["global_entry"] = entry
-        _LOGGER.info(
-            "Set unique_id to ennatuurlijk_global for global entry %s", entry.entry_id
-        )
-        _LOGGER.info("Migration of entry %s to version 2 complete", entry.entry_id)
-        return True
 
-    # For subentries, ensure global entry exists and is migrated first
-    global_entry = _find_global_entry(hass)
-    if not global_entry:
-        # Find the first v1 entry with settings (not a subentry)
-        for e in hass.config_entries.async_entries(DOMAIN):
-            edata = dict(e.data)
-            if e.version == 1 and (
-                edata.get("is_global") or not edata.get("postal_code")
-            ):
-                _LOGGER.info(
-                    "Migrating global entry %s before subentry %s",
-                    e.entry_id,
-                    entry.entry_id,
-                )
-                await async_migrate_entry(hass, e)
-                global_entry = _find_global_entry(hass)
-                break
-        # If still no global entry, create one from this entry's settings
-        if not global_entry:
-            global_entry = await _create_global_entry(hass, data)
-    # Now migrate this subentry
-    postal_code = data.get("postal_code")
-    if postal_code:
-        hass.config_entries.async_update_entry(entry, unique_id=postal_code)
-        _LOGGER.info("Set unique_id to %s for subentry %s", postal_code, entry.entry_id)
-    hass.config_entries.async_update_entry(entry, version=2, data=data, options=options)
-    _LOGGER.info("Migration of entry %s to version 2 complete", entry.entry_id)
+    # V1→V2 migration: Convert to appropriate pattern based on entry type
+    postal_code = entry.data.get("postal_code")
+    town = entry.data.get("town", "")
+
+    # Extract config options from v1 data to move to options
+    config_options = {}
+    for key in ["days_to_keep_solved", "create_alert_sensors", "update_interval"]:
+        if key in entry.data:
+            config_options[key] = entry.data[key]
+
+    # Merge with existing options (options take precedence)
+    new_options = {**config_options, **entry.options}
+
+    if not postal_code:
+        # This is a main entry
+        new_data = {"name": "Ennatuurlijk Disruptions"}
+        new_unique_id = "ennatuurlijk_global"
+        new_title = "Ennatuurlijk Disruptions"
+    else:
+        # This is a location entry, convert to subentry-compatible format
+        new_data = {
+            "name": entry.data.get("name", "Ennatuurlijk Disruptions"),
+            "town": town,
+            "postal_code": postal_code,
+        }
+        new_unique_id = postal_code
+        new_title = f"{town} - {postal_code}"
+
+    hass.config_entries.async_update_entry(
+        entry,
+        unique_id=new_unique_id,
+    )
+
+    hass.config_entries.async_update_entry(
+        entry,
+        title=new_title,
+        data=new_data,
+        options=new_options,
+        version=2,
+    )
+
+    _LOGGER.info(
+        "Converted entry %s to main entry (v1 location: %s %s will need re-adding)",
+        entry.entry_id,
+        town,
+        postal_code,
+    )
+    _LOGGER.info("Please add your locations back via the UI after migration")
+
     return True
 
 
@@ -106,41 +72,24 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up config entry: global or subentry."""
+    """Set up config entry."""
     hass.data.setdefault(DOMAIN, {})
-    # Always register the global entry if this is the global entry
-    if entry.unique_id == "ennatuurlijk_global":
-        _register_global_entry(hass, entry)
-        return True
-    # If the global entry is not registered, find and register it
-    global_entry = hass.data[DOMAIN].get("global_entry")
-    if not global_entry:
-        global_entry = _find_global_entry(hass)
-        if global_entry:
-            _register_global_entry(hass, global_entry)
-        else:
-            _LOGGER.error(
-                "No global config entry found. Please add the global settings first."
-            )
-            return False
-    return await _setup_subentry(hass, entry, global_entry)
 
+    # Set up coordinators for all existing location subentries (like NS pattern)
+    coordinators: dict[str, object] = {}
 
-def _register_global_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Register the global config entry in hass.data."""
-    _LOGGER.debug("Registering global config entry")
-    hass.data[DOMAIN]["global_entry"] = entry
+    for subentry_id, subentry in entry.subentries.items():
+        if subentry.subentry_type == "location":
+            # Create coordinator from subentry (contains all location settings)
+            coordinator = create_coordinator(hass, subentry)
+            _LOGGER.debug("Initial data refresh for subentry %s", subentry_id)
+            await coordinator.async_config_entry_first_refresh()
+            _LOGGER.debug("Initial refresh successful for subentry %s", subentry_id)
+            coordinators[subentry_id] = coordinator
 
+    entry.runtime_data = coordinators
 
-async def _setup_subentry(
-    hass: HomeAssistant, entry: ConfigEntry, global_entry: ConfigEntry
-) -> bool:
-    """Set up a subentry: create coordinator, refresh, and forward setups."""
-    coordinator = create_coordinator(hass, entry, global_entry=global_entry)
-    _LOGGER.debug(f"Initial data refresh for subentry {entry.entry_id}")
-    await coordinator.async_config_entry_first_refresh()
-    _LOGGER.debug("Initial refresh successful for subentry %s", entry.entry_id)
-    hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator, "entry": entry}
+    # Set up platforms for all subentries
     await hass.config_entries.async_forward_entry_setups(
         entry, ["sensor", "binary_sensor", "calendar"]
     )
@@ -148,18 +97,10 @@ async def _setup_subentry(
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry and clean up hass.data."""
-    # Global entry doesn't have platforms to unload
-    if entry.unique_id == "ennatuurlijk_global":
-        # Just clean up the global entry registration
-        if hass.data.get(DOMAIN, {}).get("global_entry") == entry:
-            hass.data[DOMAIN].pop("global_entry", None)
-        return True
-
-    # Unload platforms for subentries
+    """Unload a config entry and clean up runtime data."""
     unload_ok = await hass.config_entries.async_unload_platforms(
         entry, ["sensor", "binary_sensor", "calendar"]
     )
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+    if unload_ok and hasattr(entry, "runtime_data"):
+        entry.runtime_data = None
     return unload_ok

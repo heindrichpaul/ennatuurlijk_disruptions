@@ -45,19 +45,19 @@ class EnnatuurlijkEntity(CoordinatorEntity):
     def __init__(
         self,
         coordinator: EnnatuurlijkCoordinator,
-        entry,
+        subentry,
         description: SensorEntityDescription | BinarySensorEntityDescription,
     ):
         """Initialize the entity."""
         super().__init__(coordinator)
         self.entity_description = description
-        self._entry = entry
-        # Use entry_id and description.key for unique_id
-        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_{description.key}"
-        # Device info for subentry
+        self._subentry = subentry
+        # Use subentry data for unique_id and device info
+        self._attr_unique_id = f"{DOMAIN}_{subentry.unique_id}_{description.key}"
+        # Device info for subentry (each location is a separate device)
         self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": f"Ennatuurlijk Disruptions {entry.data.get('town', '')}",
+            "identifiers": {(DOMAIN, subentry.unique_id)},
+            "name": f"Ennatuurlijk Disruptions {subentry.data.get('town', '')}",
             "manufacturer": "Ennatuurlijk",
             "model": "Disruption Monitor",
         }

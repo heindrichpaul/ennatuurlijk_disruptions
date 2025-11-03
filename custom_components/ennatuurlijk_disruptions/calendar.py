@@ -1,4 +1,5 @@
 """Calendar entity for Ennatuurlijk Disruptions."""
+
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent  # type: ignore
 from homeassistant.util import dt as dt_util  # type: ignore
 from datetime import datetime, timedelta
@@ -7,25 +8,35 @@ from .const import DOMAIN, _LOGGER
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    # Only create the calendar entity once
+    # Only create the calendar entity once for the main entry
     if "calendar_entity_created" in hass.data.setdefault(DOMAIN, {}):
-        _LOGGER.debug("Calendar entity already created, skipping for entry: %s", entry.entry_id)
+        _LOGGER.debug(
+            "Calendar entity already created, skipping for entry: %s", entry.entry_id
+        )
         return
-    _LOGGER.debug("Setting up single Ennatuurlijk Disruptions Calendar for the integration")
-    async_add_entities([
-        EnnatuurlijkDisruptionsCalendar(hass)
-    ])
+
+    # Only create calendar if this entry has subentries (coordinators)
+    if not hasattr(entry, "runtime_data") or not entry.runtime_data:
+        _LOGGER.debug(
+            "No subentries found, skipping calendar creation for entry: %s",
+            entry.entry_id,
+        )
+        return
+
+    _LOGGER.debug(
+        "Setting up single Ennatuurlijk Disruptions Calendar for the integration"
+    )
+    async_add_entities([EnnatuurlijkDisruptionsCalendar(hass, entry)])
     hass.data[DOMAIN]["calendar_entity_created"] = True
-
-
 
 
 class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
     _attr_icon = "mdi:calendar-alert"
 
-    def __init__(self, hass):
+    def __init__(self, hass, main_entry):
         super().__init__()
         self.hass = hass
+        self.main_entry = main_entry
         self._attr_unique_id = f"{DOMAIN}_calendar"
         self._attr_name = "Ennatuurlijk Disruptions Calendar"
         self._event_logs = {}  # {disruption_id: [log entries]}
@@ -36,12 +47,9 @@ class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
             "model": "Disruption Monitor",
         }
 
-
     @property
     def has_entity_name(self) -> bool:
         return True
-
-
 
     @property
     def event(self):
@@ -49,20 +57,16 @@ class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
         events = self._get_events(today, today + timedelta(days=365))
         return events[0] if events else None
 
-
-
     async def async_get_events(self, hass, start_date, end_date):
         return self._get_events(start_date.date(), end_date.date())
 
     def _get_events(self, start_date, end_date):
-        # Aggregate disruptions from all subentries
+        # Aggregate disruptions from all subentries coordinators
         disruptions_by_id = {}
-        for entry_id, entry_data in self.hass.data.get(DOMAIN, {}).items():
-            if entry_id == "global_entry":
-                continue
-            if not isinstance(entry_data, dict) or "coordinator" not in entry_data:
-                continue
-            coordinator = entry_data["coordinator"]
+
+        # Get coordinators from main entry runtime data
+        coordinators = self.main_entry.runtime_data
+        for subentry_id, coordinator in coordinators.items():
             for status in ("planned", "current", "solved"):
                 status_data = getattr(coordinator, status, {})
                 for disruption in status_data.get("dates", []):
@@ -135,13 +139,11 @@ class EnnatuurlijkDisruptionsCalendar(CalendarEntity):
         events.sort(key=lambda e: e.start)
         return events
 
-
     def _extract_id_from_link(self, link):
         if not link:
             return None
         m = re.search(r"/(\d+)$", link)
         return m.group(1) if m else None
-
 
     def _parse_date(self, date_str):
         try:

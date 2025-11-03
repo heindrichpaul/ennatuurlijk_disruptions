@@ -3,7 +3,12 @@
 
 from homeassistant import config_entries  # type: ignore
 from homeassistant.const import CONF_NAME  # type: ignore
-from homeassistant.config_entries import ConfigFlow
+from homeassistant.config_entries import (
+    ConfigFlow,
+    ConfigSubentryFlow,
+    SubentryFlowResult,
+)
+from homeassistant.core import callback
 from .const import (
     DOMAIN,
     CONF_TOWN,
@@ -16,8 +21,8 @@ from .const import (
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
 )
+from .utils import PostalCodeValidator, SchemaHelper
 import voluptuous as vol
-import re
 
 
 class EnnatuurlijkOptionsFlowHandler(config_entries.OptionsFlow):
@@ -29,7 +34,7 @@ class EnnatuurlijkOptionsFlowHandler(config_entries.OptionsFlow):
 
     @property
     def config_entry(self):
-    # Property for backward compatibility
+        # Property for backward compatibility
         return self._config_entry
 
     async def async_step_init(self, user_input=None):
@@ -52,44 +57,19 @@ class EnnatuurlijkOptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
-                {
-                    vol.Optional(
-                        CONF_DAYS_TO_KEEP_SOLVED,
-                        default=self._config_entry.options.get(
-                            CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED
-                        ),
-                    ): int,
-                    vol.Optional(
-                        CONF_CREATE_ALERT_SENSORS,
-                        default=self._config_entry.options.get(
-                            CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS
-                        ),
-                    ): bool,
-                    vol.Optional(
-                        CONF_UPDATE_INTERVAL,
-                        default=self._config_entry.options.get(
-                            CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
-                        ),
-                    ): int,
-                }
+                SchemaHelper.get_common_options(self._config_entry.options)
             ),
             errors=errors,
         )
 
 
-
 class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
+    VERSION = 2
 
-    def _normalize_postal_code(self, postal_code: str) -> str:
-        """Normalize postal code by removing spaces and uppercasing."""
-        return postal_code.replace(" ", "").upper()
-
-    def _is_valid_postal_code(self, postal_code: str) -> bool:
-        """Check if postal code matches Dutch format 1234AB."""
-        return bool(re.match(r"^\d{4}[A-Z]{2}$", postal_code))
-
-    def _is_duplicate_postal_code(self, postal_code: str, exclude_entry_id: "str | None" = None) -> bool:
-        """Check if a subentry with this postal code already exists, excluding a given entry_id if provided."""
+    def _is_duplicate_postal_code(
+        self, postal_code: str, exclude_entry_id: "str | None" = None
+    ) -> bool:
+        """Check if an entry with this postal code already exists, excluding a given entry_id if provided."""
         for entry in self._async_current_entries():
             if exclude_entry_id and entry.entry_id == exclude_entry_id:
                 continue
@@ -97,111 +77,134 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
                 return True
         return False
 
-    async def async_step_migration(self, user_input=None):
-        """Handle migration step for global config entry creation."""
-        _LOGGER.info("Handling migration step for Ennatuurlijk Disruptions config flow.")
-        # Use defaults or values from user_input if provided
-        days_to_keep_solved = DEFAULT_DAYS_TO_KEEP_SOLVED
-        update_interval = DEFAULT_UPDATE_INTERVAL
-        if user_input is not None:
-            days_to_keep_solved = user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)
-            update_interval = user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
-        return self.async_create_entry(
-            title="Ennatuurlijk Disruptions (Global Settings)",
-            data={
-                "is_global": True,
-                CONF_DAYS_TO_KEEP_SOLVED: days_to_keep_solved,
-                CONF_UPDATE_INTERVAL: update_interval,
-            },
-        )
-    VERSION = 2
-
     def __init__(self):
-        _LOGGER.debug("Initializing EnnatuurlijkConfigFlow (global+subentry)")
+        _LOGGER.debug("Initializing EnnatuurlijkConfigFlow")
         super().__init__()
-        self._global_entry = None
 
     async def async_step_user(self, user_input=None):
-        """Handle user step: create global entry or redirect to add subentry."""
-        errors = {}
-        
-        # Check if a global entry already exists
-        global_entry_exists = False
+        """Handle user step: create main integration entry."""
+        # Check if main entry already exists
         for entry in self._async_current_entries():
-            if entry.unique_id == "ennatuurlijk_global":
-                global_entry_exists = True
-                break
-        
-        # If global entry exists, redirect to add subentry
-        if global_entry_exists:
-            return await self.async_step_add_subentry()
-        
-        # Otherwise, create the global entry
+            if not entry.data.get("postal_code"):  # Main entry has no postal_code
+                return self.async_abort(reason="already_configured")
+
+        errors = {}
         if user_input is not None:
-            await self.async_set_unique_id("ennatuurlijk_global")
-            self._abort_if_unique_id_configured()
+            # Create main integration entry with common options
             return self.async_create_entry(
-                title="Ennatuurlijk Disruptions (Global Settings)",
-                data={
-                    CONF_DAYS_TO_KEEP_SOLVED: user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED),
-                    CONF_UPDATE_INTERVAL: user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
+                title="Ennatuurlijk Disruptions",
+                data={"name": "Ennatuurlijk Disruptions"},
+                options={
+                    CONF_DAYS_TO_KEEP_SOLVED: user_input.get(
+                        CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED
+                    ),
+                    CONF_CREATE_ALERT_SENSORS: user_input.get(
+                        CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS
+                    ),
+                    CONF_UPDATE_INTERVAL: user_input.get(
+                        CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+                    ),
                 },
             )
+
+        # Show form for common options
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=DEFAULT_DAYS_TO_KEEP_SOLVED): int,
-                    vol.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int,
-                }
-            ),
+            data_schema=vol.Schema(SchemaHelper.get_common_options()),
             errors=errors,
         )
 
+    async def async_step_migration(self, user_input=None):
+        """Handle migration step for creating main entry from existing data."""
+        if user_input is None:
+            # Use defaults for migration
+            user_input = {
+                CONF_DAYS_TO_KEEP_SOLVED: DEFAULT_DAYS_TO_KEEP_SOLVED,
+                CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_INTERVAL,
+            }
+
+        # Create main integration entry for migration scenario
+        return self.async_create_entry(
+            title="Ennatuurlijk Disruptions",
+            data={"name": "Ennatuurlijk Disruptions"},
+            options={
+                CONF_DAYS_TO_KEEP_SOLVED: user_input.get(
+                    CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED
+                ),
+                CONF_UPDATE_INTERVAL: user_input.get(
+                    CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+                ),
+            },
+        )
+
     async def async_step_add_subentry(self, user_input=None):
-        # Subentry step (postal code/town)
-        errors = {}
+        """Handle adding a subentry (location)."""
+        _LOGGER.debug("Starting async_step_add_subentry with input: %s", user_input)
+
         if user_input is not None:
-            town = user_input[CONF_TOWN]
-            postal_code = self._normalize_postal_code(user_input[CONF_POSTAL_CODE])
-            name = user_input.get(CONF_NAME, f"Ennatuurlijk Disruptions {town}")
-            days_to_keep_solved = user_input.get(CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED)
-            create_alert_sensors = user_input.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS)
-            update_interval = user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
-            if not self._is_valid_postal_code(postal_code):
-                errors["postal_code"] = "invalid_postal_code"
-            if not errors:
-                await self.async_set_unique_id(postal_code)
-                if self._is_duplicate_postal_code(postal_code):
-                    return self.async_abort(reason="already_configured")
-                return self.async_create_entry(
-                    title=name,
-                    data={
-                        CONF_NAME: name,
-                        CONF_TOWN: town,
-                        CONF_POSTAL_CODE: postal_code,
-                    },
-                    options={
-                        CONF_DAYS_TO_KEEP_SOLVED: days_to_keep_solved,
-                        CONF_CREATE_ALERT_SENSORS: create_alert_sensors,
-                        CONF_UPDATE_INTERVAL: update_interval,
-                    },
+            # Validate postal code
+            postal_code, is_valid = PostalCodeValidator.validate_and_normalize(
+                user_input.get(CONF_POSTAL_CODE, "")
+            )
+
+            if not is_valid:
+                return self.async_show_form(
+                    step_id="add_subentry",
+                    data_schema=vol.Schema(
+                        {
+                            vol.Required(CONF_NAME): str,
+                            vol.Required(CONF_TOWN): str,
+                            vol.Required(CONF_POSTAL_CODE): str,
+                            **SchemaHelper.get_common_options(),
+                        }
+                    ),
+                    errors={"postal_code": "invalid_postal_code"},
                 )
+
+            # Check for duplicate postal code
+            for existing_entry in self.hass.config_entries.async_entries(DOMAIN):
+                if existing_entry.unique_id == postal_code:
+                    return self.async_abort(reason="already_configured")
+
+            # Create subentry
+            await self.async_set_unique_id(postal_code)
+            return self.async_create_entry(
+                title=f"{user_input[CONF_TOWN]} - {postal_code}",
+                data={
+                    "name": user_input[CONF_NAME],
+                    "town": user_input[CONF_TOWN],
+                    "postal_code": postal_code,
+                },
+                options={
+                    CONF_DAYS_TO_KEEP_SOLVED: user_input.get(
+                        CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED
+                    ),
+                    CONF_CREATE_ALERT_SENSORS: user_input.get(
+                        CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS
+                    ),
+                    CONF_UPDATE_INTERVAL: user_input.get(
+                        CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+                    ),
+                },
+            )
+
         return self.async_show_form(
             step_id="add_subentry",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_NAME, default="Ennatuurlijk Disruptions"): str,
+                    vol.Required(CONF_NAME): str,
                     vol.Required(CONF_TOWN): str,
                     vol.Required(CONF_POSTAL_CODE): str,
-                    vol.Optional(CONF_DAYS_TO_KEEP_SOLVED, default=DEFAULT_DAYS_TO_KEEP_SOLVED): int,
-                    vol.Optional(CONF_CREATE_ALERT_SENSORS, default=DEFAULT_CREATE_ALERT_SENSORS): bool,
-                    vol.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int,
+                    **SchemaHelper.get_common_options(),
                 }
             ),
-            errors=errors,
         )
 
+    @classmethod
+    @callback
+    def async_get_supported_subentry_types(cls, config_entry):
+        """Return subentries supported by this integration."""
+        return {"location": LocationSubentryFlowHandler}
 
     async def async_step_reconfigure(self, user_input=None):
         _LOGGER.debug(
@@ -209,7 +212,7 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
             user_input,
             self.context,
         )
-    # Get config_entry_id from context
+        # Get config_entry_id from context
         entry_id = self.context.get("entry_id") if "entry_id" in self.context else None
         if not entry_id:
             _LOGGER.error(
@@ -217,7 +220,7 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
             )
             return self.async_abort(reason="entry_not_found")
 
-    # Fetch the config entry
+        # Fetch the config entry
         config_entry = self.hass.config_entries.async_get_entry(entry_id)
         if config_entry is None:
             _LOGGER.error(
@@ -228,8 +231,10 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
         errors = {}
         if user_input is not None:
             # Validate and normalize postal code
-            postal_code = self._normalize_postal_code(user_input[CONF_POSTAL_CODE])
-            if not self._is_valid_postal_code(postal_code):
+            postal_code, is_valid = PostalCodeValidator.validate_and_normalize(
+                user_input[CONF_POSTAL_CODE]
+            )
+            if not is_valid:
                 errors["postal_code"] = "invalid_postal_code"
                 _LOGGER.warning(
                     "Invalid postal code format during reconfigure: %s", postal_code
@@ -237,7 +242,9 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
 
             if not errors:
                 # Check for duplicate postal code among other entries (exclude self)
-                if self._is_duplicate_postal_code(postal_code, exclude_entry_id=config_entry.entry_id):
+                if self._is_duplicate_postal_code(
+                    postal_code, exclude_entry_id=config_entry.entry_id
+                ):
                     return self.async_abort(reason="already_configured")
 
                 # Update unique_id if postal code changed
@@ -278,46 +285,88 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
         _LOGGER.debug(
             "Showing reconfigure form with existing values: %s", config_entry.data
         )
+
+        # Build complete schema
+        schema_dict = {
+            vol.Required(
+                CONF_NAME,
+                default=config_entry.data.get(CONF_NAME, "Ennatuurlijk Disruptions"),
+            ): str,
+            vol.Required(CONF_TOWN, default=config_entry.data.get(CONF_TOWN)): str,
+            vol.Required(
+                CONF_POSTAL_CODE,
+                default=config_entry.data.get(CONF_POSTAL_CODE),
+            ): str,
+            **SchemaHelper.get_common_options(config_entry.options),
+        }
+
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_NAME,
-                        default=config_entry.data.get(
-                            CONF_NAME, "Ennatuurlijk Disruptions"
-                        ),
-                    ): str,
-                    vol.Required(
-                        CONF_TOWN, default=config_entry.data.get(CONF_TOWN)
-                    ): str,
-                    vol.Required(
-                        CONF_POSTAL_CODE,
-                        default=config_entry.data.get(CONF_POSTAL_CODE),
-                    ): str,
-                    vol.Optional(
-                        CONF_DAYS_TO_KEEP_SOLVED,
-                        default=config_entry.options.get(
-                            CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED
-                        ),
-                    ): int,
-                    vol.Optional(
-                        CONF_CREATE_ALERT_SENSORS,
-                        default=config_entry.options.get(
-                            CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS
-                        ),
-                    ): bool,
-                    vol.Optional(
-                        CONF_UPDATE_INTERVAL,
-                        default=config_entry.options.get(
-                            CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
-                        ),
-                    ): int,
-                }
-            ),
+            data_schema=vol.Schema(schema_dict),
             errors=errors,
         )
 
     @staticmethod
     def async_get_options_flow(config_entry):
         return EnnatuurlijkOptionsFlowHandler(config_entry)
+
+
+class LocationSubentryFlowHandler(ConfigSubentryFlow):
+    """Handle subentry flow for adding and modifying locations."""
+
+    def _is_duplicate_postal_code(self, postal_code: str) -> bool:
+        """Check if a subentry with this postal code already exists."""
+        main_entry = self._get_entry()
+        for subentry in main_entry.subentries.values():
+            if subentry.unique_id == postal_code:
+                return True
+        return False
+
+    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
+        """Add a new location subentry."""
+        errors = {}
+
+        if user_input is not None:
+            town = user_input[CONF_TOWN]
+            postal_code, is_valid = PostalCodeValidator.validate_and_normalize(
+                user_input[CONF_POSTAL_CODE]
+            )
+            name = user_input.get(CONF_NAME, f"Ennatuurlijk Disruptions {town}")
+
+            if not is_valid:
+                errors["postal_code"] = "invalid_postal_code"
+
+            if not errors and self._is_duplicate_postal_code(postal_code):
+                return self.async_abort(reason="already_configured")
+
+            if not errors:
+                return self.async_create_entry(
+                    title=f"{town} {postal_code}",
+                    data={
+                        CONF_NAME: name,
+                        CONF_TOWN: town,
+                        CONF_POSTAL_CODE: postal_code,
+                        CONF_DAYS_TO_KEEP_SOLVED: user_input.get(
+                            CONF_DAYS_TO_KEEP_SOLVED, DEFAULT_DAYS_TO_KEEP_SOLVED
+                        ),
+                        CONF_CREATE_ALERT_SENSORS: user_input.get(
+                            CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS
+                        ),
+                        CONF_UPDATE_INTERVAL: user_input.get(
+                            CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+                        ),
+                    },
+                )
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_NAME, default="Ennatuurlijk Disruptions"): str,
+                    vol.Required(CONF_TOWN): str,
+                    vol.Required(CONF_POSTAL_CODE): str,
+                    **SchemaHelper.get_common_options(),
+                }
+            ),
+            errors=errors,
+        )

@@ -1,11 +1,17 @@
-
 import pytest
 from datetime import date
-from custom_components.ennatuurlijk_disruptions.calendar import EnnatuurlijkDisruptionsCalendar
-from custom_components.ennatuurlijk_disruptions.coordinator import EnnatuurlijkCoordinator
+from custom_components.ennatuurlijk_disruptions.calendar import (
+    EnnatuurlijkDisruptionsCalendar,
+)
+from custom_components.ennatuurlijk_disruptions.coordinator import (
+    EnnatuurlijkCoordinator,
+)
+
 
 @pytest.fixture
-async def setup_calendar_env(hass, mockEntry, mock_global_config_entry, mock_aiohttp_session):
+async def setup_calendar_env(
+    hass, mockEntry, mock_global_config_entry, mock_aiohttp_session
+):
     """Fixture to set up hass.data and calendar for all calendar tests."""
     mockEntry.add_to_hass(hass)
     coordinator = EnnatuurlijkCoordinator(hass, mockEntry)
@@ -13,8 +19,16 @@ async def setup_calendar_env(hass, mockEntry, mock_global_config_entry, mock_aio
     if "ennatuurlijk_disruptions" not in hass.data:
         hass.data["ennatuurlijk_disruptions"] = {}
     hass.data["ennatuurlijk_disruptions"]["global_entry"] = mock_global_config_entry
-    hass.data["ennatuurlijk_disruptions"][mockEntry.entry_id] = {"coordinator": coordinator, "entry": mockEntry}
-    return EnnatuurlijkDisruptionsCalendar(hass)
+    hass.data["ennatuurlijk_disruptions"][mockEntry.entry_id] = {
+        "coordinator": coordinator,
+        "entry": mockEntry,
+    }
+
+    # Set up runtime_data on the global entry so calendar can find coordinators
+    mock_global_config_entry.runtime_data = {mockEntry.entry_id: coordinator}
+
+    return EnnatuurlijkDisruptionsCalendar(hass, mock_global_config_entry)
+
 
 @pytest.mark.asyncio
 async def test_solved_only_event_single_day_and_hashtag(setup_calendar_env):
@@ -29,6 +43,7 @@ async def test_solved_only_event_single_day_and_hashtag(setup_calendar_env):
         for ev in events
     )
 
+
 @pytest.mark.asyncio
 async def test_current_then_solved_is_single_event(setup_calendar_env):
     """Test that same disruption ID in current and solved creates single event."""
@@ -37,6 +52,7 @@ async def test_current_then_solved_is_single_event(setup_calendar_env):
     end = date(2025, 6, 27)
     events = cal._get_events(start, end)
     assert isinstance(events, list)
+
 
 @pytest.mark.asyncio
 async def test_planned_event_all_day_and_hashtag(setup_calendar_env):
