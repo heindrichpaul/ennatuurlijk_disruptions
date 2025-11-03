@@ -45,7 +45,9 @@
     },
     "config_subentries": {
         "location": {
-            "add_subentry_type": "Locatie Toevoegen"
+            "initiate_flow": {
+                "user": "Locatie Toevoegen"
+            }
         }
     },
     "entity": {

@@ -45,7 +45,9 @@
     },
     "config_subentries": {
         "location": {
-            "add_subentry_type": "Add Location"
+            "initiate_flow": {
+                "user": "Add Location"
+            }
         }
     },
     "options": {
