@@ -18,7 +18,7 @@ PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CALENDAR]
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate config entries from v1 to v2 (subentry pattern)."""
+    """Migrate config entries from v1 to v2."""
     _LOGGER.info(
         "Migrating config entry %s from version %s", entry.entry_id, entry.version
     )
