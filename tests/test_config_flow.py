@@ -8,6 +8,7 @@ from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.ennatuurlijk_disruptions.config_flow import (
     EnnatuurlijkOptionsFlowHandler,
+    EnnatuurlijkConfigFlow,
 )
 from custom_components.ennatuurlijk_disruptions.const import (
     DOMAIN,
@@ -602,3 +603,47 @@ async def test_reconfigure_flow_duplicate_postal_code(
     )
     assert result.get("type") == FlowResultType.ABORT
     assert result.get("reason") == "already_configured"
+
+
+@pytest.mark.asyncio
+async def test_async_step_migration_defaults(hass):
+    flow = EnnatuurlijkConfigFlow()
+    flow.hass = hass
+    # No user_input: should use defaults
+    result = await flow.async_step_migration()
+    assert result["type"] == "create_entry"
+    assert result["data"]["is_global"] is True
+    assert result["data"][CONF_DAYS_TO_KEEP_SOLVED] == DEFAULT_DAYS_TO_KEEP_SOLVED
+    assert result["data"][CONF_UPDATE_INTERVAL] == DEFAULT_UPDATE_INTERVAL
+
+
+@pytest.mark.asyncio
+async def test_async_step_migration_with_user_input(hass):
+    flow = EnnatuurlijkConfigFlow()
+    flow.hass = hass
+    user_input = {CONF_DAYS_TO_KEEP_SOLVED: 42, CONF_UPDATE_INTERVAL: 99}
+    result = await flow.async_step_migration(user_input)
+    assert result["type"] == "create_entry"
+    assert result["data"]["is_global"] is True
+    assert result["data"][CONF_DAYS_TO_KEEP_SOLVED] == 42
+    assert result["data"][CONF_UPDATE_INTERVAL] == 99
+
+
+@pytest.mark.asyncio
+async def test_async_step_reconfigure_entry_not_found(hass):
+    flow = EnnatuurlijkConfigFlow()
+    flow.hass = hass
+    flow.context = {}  # No entry_id in context
+    result = await flow.async_step_reconfigure()
+    assert result["type"] == "abort"
+    assert result["reason"] == "entry_not_found"
+
+@pytest.mark.asyncio
+async def test_async_step_reconfigure_entry_id_not_found(hass):
+    flow = EnnatuurlijkConfigFlow()
+    flow.hass = hass
+    flow.context = {"entry_id": "doesnotexist"}
+    hass.config_entries.async_get_entry = lambda eid: None
+    result = await flow.async_step_reconfigure()
+    assert result["type"] == "abort"
+    assert result["reason"] == "entry_not_found"

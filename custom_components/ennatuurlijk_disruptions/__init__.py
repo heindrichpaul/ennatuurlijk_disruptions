@@ -80,7 +80,12 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up config entry: global or subentry."""
     hass.data.setdefault(DOMAIN, {})
+    # Always register the global entry if this is the global entry
     if entry.unique_id == "ennatuurlijk_global":
+        _register_global_entry(hass, entry)
+        return True
+    # If the global entry is not registered but this entry is global, register it
+    if "global_entry" not in hass.data[DOMAIN] and getattr(entry, "unique_id", None) == "ennatuurlijk_global":
         _register_global_entry(hass, entry)
         return True
     global_entry = hass.data[DOMAIN].get("global_entry")
