@@ -58,13 +58,17 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # For subentries, ensure global entry exists and is migrated first
     global_entry = _find_global_entry(hass)
     if not global_entry:
-        v1_global = _find_v1_global_entry(hass)
-        if v1_global:
-            _LOGGER.info("Migrating global entry %s before subentry %s", v1_global.entry_id, entry.entry_id)
-            await async_migrate_entry(hass, v1_global)
-            global_entry = _find_global_entry(hass)
-    if not global_entry:
-        await _create_global_entry(hass, data)
+        # Find the first v1 entry with settings (not a subentry)
+        for e in hass.config_entries.async_entries(DOMAIN):
+            edata = dict(e.data)
+            if e.version == 1 and (edata.get("is_global") or not edata.get("postal_code")):
+                _LOGGER.info("Migrating global entry %s before subentry %s", e.entry_id, entry.entry_id)
+                await async_migrate_entry(hass, e)
+                global_entry = _find_global_entry(hass)
+                break
+        # If still no global entry, create one from this entry's settings
+        if not global_entry:
+            await _create_global_entry(hass, data)
     # Now migrate this subentry
     postal_code = data.get("postal_code")
     if postal_code:
