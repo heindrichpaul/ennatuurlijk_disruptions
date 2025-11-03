@@ -122,15 +122,24 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
         self._global_entry = None
 
     async def async_step_user(self, user_input=None):
-        # Global config entry step
+        """Handle user step: create global entry or redirect to add subentry."""
         errors = {}
+        
+        # Check if a global entry already exists
+        global_entry_exists = False
+        for entry in self._async_current_entries():
+            if entry.unique_id == "ennatuurlijk_global":
+                global_entry_exists = True
+                break
+        
+        # If global entry exists, redirect to add subentry
+        if global_entry_exists:
+            return await self.async_step_add_subentry()
+        
+        # Otherwise, create the global entry
         if user_input is not None:
-            # Only one global config entry allowed
             await self.async_set_unique_id("ennatuurlijk_global")
-            # Only abort if a global entry already exists
-            for entry in self._async_current_entries():
-                if entry.unique_id == "ennatuurlijk_global":
-                    return self.async_abort(reason="already_configured")
+            self._abort_if_unique_id_configured()
             return self.async_create_entry(
                 title="Ennatuurlijk Disruptions (Global Settings)",
                 data={

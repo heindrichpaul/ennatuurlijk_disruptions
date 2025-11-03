@@ -199,22 +199,13 @@ async def test_user_flow_postal_code_normalization(
 async def test_user_flow_default_values(
     hass: HomeAssistant, enable_custom_integrations, mock_requests_get, global_config_entry
 ):
-    # Create global config entry
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
-    await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_DAYS_TO_KEEP_SOLVED: 7,
-            CONF_UPDATE_INTERVAL: 120,
-        },
-    )
+    # Since global_config_entry exists, user flow should redirect to add_subentry
     # Add subentry with only required fields
     unique_postal_code = get_unique_postal_code()
     result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "add_subentry"}
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
+    # Should be on add_subentry step now (redirected from user)
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
