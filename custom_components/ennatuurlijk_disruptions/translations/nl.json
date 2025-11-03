@@ -47,6 +47,16 @@
         "location": {
             "initiate_flow": {
                 "user": "Locatie Toevoegen"
+            },
+            "step": {
+                "user": {
+                    "data": {
+                        "name": "Naam",
+                        "town": "Plaats",
+                        "postal_code": "Postcode"
+                    },
+                    "description": "Voer uw woonplaats en postcode in om Ennatuurlijk-storingen te monitoren. Zowel '1234 AB' als '1234AB' formaten worden geaccepteerd."
+                }
             }
         }
     },
