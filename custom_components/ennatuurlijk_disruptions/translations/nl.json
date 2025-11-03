@@ -43,12 +43,6 @@
             "reconfigure_successful": "Configuratie succesvol bijgewerkt."
         }
     },
-    "subentry": {
-        "location": {
-            "name": "Locatie Toevoegen",
-            "description": "Monitor storingen voor een specifieke locatie"
-        }
-    },
     "entity": {
         "sensor": {
             "ennatuurlijk_disruptions": {
