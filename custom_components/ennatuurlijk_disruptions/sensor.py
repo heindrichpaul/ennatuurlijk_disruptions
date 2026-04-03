@@ -1,23 +1,58 @@
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator # type: ignore
-from .const import DOMAIN, CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS, _LOGGER
-from .sensor_planned import EnnatuurlijkPlannedSensor, EnnatuurlijkPlannedAlertSensor
-from .sensor_current import EnnatuurlijkCurrentSensor, EnnatuurlijkCurrentAlertSensor
-from .sensor_solved import EnnatuurlijkSolvedSensor, EnnatuurlijkSolvedAlertSensor
+"""Sensor platform for Ennatuurlijk Disruptions."""
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    _LOGGER.info("Setting up Ennatuurlijk Disruptions sensor for entry: %s", entry.entry_id)
-    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    create_alert_sensors = entry.options.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS) if hasattr(entry, "options") else DEFAULT_CREATE_ALERT_SENSORS
-    sensors = [
-        EnnatuurlijkPlannedSensor(coordinator, entry),
-        EnnatuurlijkCurrentSensor(coordinator, entry),
-        EnnatuurlijkSolvedSensor(coordinator, entry),
-    ]
-    if create_alert_sensors:
-        sensors.extend([
-            EnnatuurlijkPlannedAlertSensor(coordinator, entry),
-            EnnatuurlijkCurrentAlertSensor(coordinator, entry),
-            EnnatuurlijkSolvedAlertSensor(coordinator, entry),
-        ])
-    async_add_entities(sensors)
+from __future__ import annotations
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+from .entity import EnnatuurlijkSensor
+from .sensor_types import SENSOR_TYPES
+
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Set up Ennatuurlijk Disruptions sensors from a config entry."""
+    _LOGGER.info(
+        "Setting up Ennatuurlijk Disruptions sensors for entry: %s", entry.entry_id
+    )
+
+    # Get coordinators from runtime_data
+    coordinators = entry.runtime_data
+    
+    _LOGGER.debug(
+        "Found %d coordinators for entry %s: %s", 
+        len(coordinators), 
+        entry.entry_id,
+        list(coordinators.keys())
+    )
+
+    if not coordinators:
+        _LOGGER.info("No location subentries found, no sensors to create for entry: %s", entry.entry_id)
+        return
+
+    for subentry_id, coordinator in coordinators.items():
+        # Get the subentry object
+        subentry = entry.subentries[subentry_id]
+
+        _LOGGER.info("Creating sensors for subentry %s (%s)", subentry_id, subentry.data.get("town", "Unknown"))
+
+        # Create sensors for this subentry
+        sensors = [
+            EnnatuurlijkSensor(coordinator, subentry, description)
+            for description in SENSOR_TYPES
+        ]
+
+        _LOGGER.info("Adding %d sensors for subentry %s", len(sensors), subentry_id)
+
+        # Add entities with proper subentry association (following NS pattern)
+        async_add_entities(sensors, config_subentry_id=subentry_id)
+
     _LOGGER.info("Entity setup completed for entry: %s", entry.entry_id)

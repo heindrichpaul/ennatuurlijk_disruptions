@@ -1,5 +1,56 @@
 # Release Notes
 
+## v3.0.0 Release Notes
+
+### Major Architecture Refactoring & Calendar Aggregation
+
+- **Single calendar entity for all sub entries**: The integration now creates only one calendar entity, which aggregates all disruptions from every config entry (sub entry). No matter how many postal codes/towns you configure, all events appear in a unified calendar.
+- **Config entry/sub entry handling**: Each configuration (postal code/town) is a Home Assistant config entry (sometimes called a sub entry). All are managed independently for sensors and binary sensors, but their disruptions are now combined in the single calendar.
+- **Base class pattern implementation**: Sensors and binary sensors use a modern base class architecture:
+  - `entity.py` with base classes (`EnnatuurlijkEntity`, `EnnatuurlijkSensor`, `EnnatuurlijkBinarySensor`)
+  - Entity descriptors with lambda functions for flexible sensor logic
+  - Eliminated code duplication across sensor implementations
+- **Binary sensor platform**: Alert sensors migrated to proper binary sensor platform:
+  - Native binary sensors with `device_class=PROBLEM`
+  - `binary_sensor_types.py` with descriptors for planned, current, and solved alerts
+  - `binary_sensor.py` platform for Home Assistant integration
+- **Sensor descriptors**: `sensor_types.py` with lambda-based descriptors for value and attributes
+- **Code cleanup**: Removed deprecated sensor files, consolidated to single `sensor.py` platform file
+
+### Duplicate Prevention System
+
+- **Unique ID implementation**: Postal codes are unique identifiers for config entries, preventing duplicates
+- **Smart reconfiguration**: Postal code changes are validated and checked for uniqueness
+- **User-friendly messages**: Proper abort and success messages for duplicate and reconfiguration attempts
+
+### Debug Logging Enhancements
+
+- **Comprehensive parsing logs**: Detailed debug logging throughout HTML parsing pipeline for easier troubleshooting
+
+### Translation Improvements
+
+- **Proper abort translations**: All abort and error messages are properly translated in both English and Dutch
+
+### Testing Improvements
+
+- **Duplicate prevention tests**: Comprehensive test coverage for duplicate and reconfiguration logic
+- **Calendar tests**: Updated to verify aggregation of events from all config entries in the single calendar entity
+- **Test coverage maintained**: All tests passing with high coverage
+
+### Technical Improvements
+
+- **CoordinatorEntity inheritance**: All entities inherit from `CoordinatorEntity` for proper update coordination
+- **Type hints and property-based design**: Modern Python typing and clean property access patterns throughout
+- **Null safety**: Comprehensive null checks in all property accessors
+
+### Compatibility & Migration
+
+- **No breaking changes**: All existing functionality preserved; upgrade is safe for all users
+- **Binary sensor migration**: Alert sensors automatically migrate to binary sensor platform
+- **Safe upgrade**: Configuration and historical data are preserved
+
+---
+
 ## v2.0.4 Release Notes
 
 ### Testing & Quality Improvements

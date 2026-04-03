@@ -34,6 +34,30 @@
                     "update_interval": "Update-interval (minuten)"
                 }
             }
+        },
+        "error": {
+            "invalid_postal_code": "Ongeldig postcodeformaat. Gebruik formaat: 1234AB of 1234 AB"
+        },
+        "abort": {
+            "already_configured": "Deze postcode is al geconfigureerd.",
+            "reconfigure_successful": "Configuratie succesvol bijgewerkt."
+        }
+    },
+    "config_subentries": {
+        "location": {
+            "initiate_flow": {
+                "user": "Locatie Toevoegen"
+            },
+            "step": {
+                "user": {
+                    "data": {
+                        "name": "Naam",
+                        "town": "Plaats",
+                        "postal_code": "Postcode"
+                    },
+                    "description": "Voer uw woonplaats en postcode in om Ennatuurlijk-storingen te monitoren. Zowel '1234 AB' als '1234AB' formaten worden geaccepteerd."
+                }
+            }
         }
     },
     "entity": {

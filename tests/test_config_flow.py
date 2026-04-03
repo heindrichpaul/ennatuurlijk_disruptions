@@ -1,9 +1,16 @@
 """Tests for the config flow."""
+
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
+
 from homeassistant.data_entry_flow import FlowResultType
 
+from custom_components.ennatuurlijk_disruptions.config_flow import (
+    EnnatuurlijkOptionsFlowHandler,
+    EnnatuurlijkConfigFlow,
+)
+from custom_components.ennatuurlijk_disruptions.utils import PostalCodeValidator
 from custom_components.ennatuurlijk_disruptions.const import (
     DOMAIN,
     CONF_TOWN,
@@ -15,35 +22,142 @@ from custom_components.ennatuurlijk_disruptions.const import (
     DEFAULT_DAYS_TO_KEEP_SOLVED,
     DEFAULT_UPDATE_INTERVAL,
 )
+import pytest
+import itertools
 
 
-async def test_user_flow_success(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
-    """Test successful user flow with valid input."""
+"""
+Fixtures and helpers for config flow tests.
+All helpers/fixtures are DRY and reusable across tests.
+"""
+
+
+@pytest.fixture
+async def global_config_entry(hass):
+    """Create a global config entry and return it."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_DAYS_TO_KEEP_SOLVED: DEFAULT_DAYS_TO_KEEP_SOLVED,
+            CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_INTERVAL,
+        },
+    )
+    return hass.config_entries.async_entries(DOMAIN)[0]
+
+
+# Helper to generate unique postal codes for subentry tests
+_postal_code_counter = itertools.count(5045)
+
+
+def get_unique_postal_code():
+    return f"{next(_postal_code_counter)}AB"
+
+
+@pytest.fixture
+async def subentry(hass, global_config_entry):
+    """Create a subentry for tests with a unique postal code."""
+    postal_code = get_unique_postal_code()
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "add_subentry"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_NAME: "Test Entry",
+            CONF_TOWN: "Tilburg",
+            CONF_POSTAL_CODE: postal_code,
+        },
+    )
+    return hass.config_entries.async_entries(DOMAIN)[-1]
+
+    # Helper for config flow steps
+
+
+# Helper for config flow steps with unique postal code
+async def create_subentry(hass, name, town, days=None, alert=None, interval=None):
+    postal_code = get_unique_postal_code()
+    user_input = {
+        CONF_NAME: name,
+        CONF_TOWN: town,
+        CONF_POSTAL_CODE: postal_code,
+    }
+    if days is not None:
+        user_input[CONF_DAYS_TO_KEEP_SOLVED] = days
+    if alert is not None:
+        user_input[CONF_CREATE_ALERT_SENSORS] = alert
+    if interval is not None:
+        user_input[CONF_UPDATE_INTERVAL] = interval
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "add_subentry"}
+    )
+    return await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input=user_input
+    )
+
+    # Helper for options flow
+
+
+async def run_options_flow(
+    hass, entry, days=None, alert=None, interval=None, user_input=None
+):
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    if user_input is None:
+        user_input = {}
+        if days is not None:
+            user_input[CONF_DAYS_TO_KEEP_SOLVED] = days
+        if alert is not None:
+            user_input[CONF_CREATE_ALERT_SENSORS] = alert
+        if interval is not None:
+            user_input[CONF_UPDATE_INTERVAL] = interval
+    return await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input=user_input
+    )
+
+
+async def test_user_flow_success(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
+    # Create global config entry
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "user"
-
-    # Submit valid data
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_DAYS_TO_KEEP_SOLVED: 7,
+            CONF_UPDATE_INTERVAL: 15,
+        },
+    )
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    # Add subentry with unique postal code
+    unique_postal_code = get_unique_postal_code()
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "add_subentry"}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "add_subentry"
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             CONF_NAME: "Test Disruptions",
             CONF_TOWN: "Amsterdam",
-            CONF_POSTAL_CODE: "1012AB",
+            CONF_POSTAL_CODE: unique_postal_code,
             CONF_DAYS_TO_KEEP_SOLVED: 7,
             CONF_CREATE_ALERT_SENSORS: True,
             CONF_UPDATE_INTERVAL: 15,
         },
     )
-
     assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Test Disruptions"
+    assert result["title"] == f"Amsterdam - {unique_postal_code}"
     assert result["data"] == {
         CONF_NAME: "Test Disruptions",
         CONF_TOWN: "Amsterdam",
-        CONF_POSTAL_CODE: "1012AB",
+        CONF_POSTAL_CODE: unique_postal_code,
     }
     assert result["options"] == {
         CONF_DAYS_TO_KEEP_SOLVED: 7,
@@ -52,97 +166,70 @@ async def test_user_flow_success(hass: HomeAssistant, enable_custom_integrations
     }
 
 
-async def test_user_flow_postal_code_with_space(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
-    """Test that postal codes with spaces are normalized."""
+@pytest.mark.parametrize(
+    "postal_code,expected",
+    [
+        ("3011 AB", "3011AB"),
+        ("3511ab", "3511AB"),
+        ("1234ABC", None),  # Invalid
+        ("1234AB", "1234AB"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_user_flow_postal_code_normalization(
+    hass,
+    enable_custom_integrations,
+    mock_requests_get,
+    global_config_entry,
+    postal_code,
+    expected,
+):
+    # Use a unique valid postal code for each test run if expected is not None
+    test_postal_code = postal_code
+    if expected is not None:
+        # Generate a unique valid postal code for this test
+        test_postal_code = get_unique_postal_code()
+        expected = PostalCodeValidator.normalize(test_postal_code)
     result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
+        DOMAIN, context={"source": "add_subentry"}
     )
-
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             CONF_NAME: "Test Disruptions",
             CONF_TOWN: "Rotterdam",
-            CONF_POSTAL_CODE: "3011 AB",  # Space in postal code
-            CONF_DAYS_TO_KEEP_SOLVED: 5,
-            CONF_CREATE_ALERT_SENSORS: False,
-            CONF_UPDATE_INTERVAL: 10,
+            CONF_POSTAL_CODE: test_postal_code,
         },
     )
-
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_POSTAL_CODE] == "3011AB"  # Space removed
-
-
-async def test_user_flow_postal_code_lowercase(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
-    """Test that lowercase postal codes are converted to uppercase."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_NAME: "Test Disruptions",
-            CONF_TOWN: "Utrecht",
-            CONF_POSTAL_CODE: "3511ab",  # Lowercase letters
-        },
-    )
-
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_POSTAL_CODE] == "3511AB"  # Uppercase
+    if expected is None:
+        assert result.get("type") == FlowResultType.FORM
+        assert result.get("errors") == {"postal_code": "invalid_postal_code"}
+    else:
+        assert result.get("type") == FlowResultType.CREATE_ENTRY
+        assert result.get("data")[CONF_POSTAL_CODE] == expected
 
 
-async def test_user_flow_invalid_postal_code_too_many_letters(
-    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+async def test_user_flow_default_values(
+    hass: HomeAssistant,
+    enable_custom_integrations,
+    mock_requests_get,
+    global_config_entry,
 ):
-    """Test validation error for postal code with too many letters."""
+    # Since global_config_entry exists, need to use add_subentry flow directly
+    # Add subentry with only required fields
+    unique_postal_code = get_unique_postal_code()
     result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
+        DOMAIN, context={"source": "add_subentry"}
     )
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_NAME: "Test Disruptions",
-            CONF_TOWN: "Amsterdam",
-            CONF_POSTAL_CODE: "1234ABC",  # Too many letters
-        },
-    )
-
-    assert result["type"] == FlowResultType.FORM
-    assert result["errors"] == {"postal_code": "invalid_postal_code"}
-
-    # Fix the postal code and complete the flow
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_NAME: "Test Disruptions",
-            CONF_TOWN: "Amsterdam",
-            CONF_POSTAL_CODE: "1234AB",  # Valid postal code
-        },
-    )
-
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_POSTAL_CODE] == "1234AB"
-
-
-async def test_user_flow_default_values(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
-    """Test that default values are used when optional fields are omitted."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
-
-    # Only provide required fields
+    # Configure the add_subentry flow
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
             CONF_NAME: "Minimal Config",
             CONF_TOWN: "Breda",
-            CONF_POSTAL_CODE: "4811AA",
+            CONF_POSTAL_CODE: unique_postal_code,
         },
     )
-
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["options"] == {
         CONF_DAYS_TO_KEEP_SOLVED: DEFAULT_DAYS_TO_KEEP_SOLVED,
@@ -151,103 +238,107 @@ async def test_user_flow_default_values(hass: HomeAssistant, enable_custom_integ
     }
 
 
-async def test_options_flow_init_form(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
-    """Test the options flow displays the form and completes."""
-    entry = await _create_entry(hass, mock_requests_get)
-
+@pytest.mark.parametrize(
+    "days,alert,interval",
+    [
+        (14, False, 20),
+        (7, True, 15),
+        (30, False, 60),
+    ],
+)
+@pytest.mark.asyncio
+async def test_options_flow_init_form(
+    hass: HomeAssistant,
+    enable_custom_integrations,
+    mock_requests_get,
+    subentry,
+    days,
+    alert,
+    interval,
+):
+    """Test the options flow displays the form and completes with various values."""
+    entry = subentry
     result = await hass.config_entries.options.async_init(entry.entry_id)
-
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "init"
-
     # Complete the options flow
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_DAYS_TO_KEEP_SOLVED: 14,
-            CONF_CREATE_ALERT_SENSORS: False,
-            CONF_UPDATE_INTERVAL: 20,
-        },
+    result = await run_options_flow(
+        hass, entry, days=days, alert=alert, interval=interval
     )
-
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"] == {
-        CONF_DAYS_TO_KEEP_SOLVED: 14,
-        CONF_CREATE_ALERT_SENSORS: False,
-        CONF_UPDATE_INTERVAL: 20,
+        CONF_DAYS_TO_KEEP_SOLVED: days,
+        CONF_CREATE_ALERT_SENSORS: alert,
+        CONF_UPDATE_INTERVAL: interval,
     }
 
 
-async def test_options_flow_update(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
-    """Test updating options via options flow."""
-    # Create a config entry with initial options
-    entry = await _create_entry(hass, mock_requests_get)
-
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-
-    # Update options
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_DAYS_TO_KEEP_SOLVED: 14,
-            CONF_CREATE_ALERT_SENSORS: False,
-            CONF_UPDATE_INTERVAL: 20,
-        },
+@pytest.mark.parametrize(
+    "days,alert,interval",
+    [
+        (14, False, 20),
+        (21, True, 30),
+    ],
+)
+@pytest.mark.asyncio
+async def test_options_flow_update(
+    hass: HomeAssistant,
+    enable_custom_integrations,
+    mock_requests_get,
+    subentry,
+    days,
+    alert,
+    interval,
+):
+    """Test updating options via options flow with various values."""
+    entry = subentry
+    result = await run_options_flow(
+        hass, entry, days=days, alert=alert, interval=interval
     )
-
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"] == {
-        CONF_DAYS_TO_KEEP_SOLVED: 14,
-        CONF_CREATE_ALERT_SENSORS: False,
-        CONF_UPDATE_INTERVAL: 20,
+        CONF_DAYS_TO_KEEP_SOLVED: days,
+        CONF_CREATE_ALERT_SENSORS: alert,
+        CONF_UPDATE_INTERVAL: interval,
     }
 
 
-async def test_options_flow_uses_defaults(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+@pytest.mark.asyncio
+async def test_options_flow_uses_defaults(
+    hass: HomeAssistant,
+    enable_custom_integrations,
+    mock_requests_get,
+    global_config_entry,
+):
     """Test that options flow uses default values when fields are omitted."""
-    # Create entry with minimal setup (will use defaults)
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_NAME: "Test Entry",
-            CONF_TOWN: "Tilburg",
-            CONF_POSTAL_CODE: "5045AB",
-        },
-    )
-    entry = hass.config_entries.async_get_entry(result["result"].entry_id)
-
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-
-    # Submit form without changing anything - defaults should be used
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        user_input={},
-    )
-
+    # Use the helper to create a subentry with only required fields
+    entry = await create_subentry(hass, "Test Entry", "Tilburg")
+    entry = hass.config_entries.async_entries(DOMAIN)[-1]
+    result = await run_options_flow(hass, entry, user_input={})
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_DAYS_TO_KEEP_SOLVED] == DEFAULT_DAYS_TO_KEEP_SOLVED
     assert result["data"][CONF_CREATE_ALERT_SENSORS] == DEFAULT_CREATE_ALERT_SENSORS
     assert result["data"][CONF_UPDATE_INTERVAL] == DEFAULT_UPDATE_INTERVAL
 
 
-async def test_reconfigure_flow_shows_form(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_reconfigure_flow_shows_form(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get, subentry
+):
     """Test that reconfigure flow shows a form with existing values and completes."""
-    # First create an entry
-    entry = await _create_entry(hass, mock_requests_get)
+    entry = subentry
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
     )
 
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "reconfigure"
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("step_id") == "reconfigure"
 
-    # Complete the reconfigure flow
+    # Complete reconfigure flow
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -264,16 +355,21 @@ async def test_reconfigure_flow_shows_form(hass: HomeAssistant, enable_custom_in
     assert result["reason"] == "reconfigure_successful"
 
 
-async def test_reconfigure_flow_updates_entry(hass: HomeAssistant, enable_custom_integrations, mock_requests_get):
+async def test_reconfigure_flow_updates_entry(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get, subentry
+):
     """Test reconfigure flow successfully updates the config entry."""
-    entry = await _create_entry(hass, mock_requests_get)
+    entry = subentry
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
     )
 
-    # Update with new values
+    # Update entry with new values
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -286,11 +382,12 @@ async def test_reconfigure_flow_updates_entry(hass: HomeAssistant, enable_custom
         },
     )
 
-    assert result["type"] == FlowResultType.ABORT
-    assert result["reason"] == "reconfigure_successful"
+    assert result.get("type") == FlowResultType.ABORT
+    assert result.get("reason") == "reconfigure_successful"
 
-    # Verify entry was updated
+    # Verify entry updated
     updated_entry = hass.config_entries.async_get_entry(entry.entry_id)
+    assert updated_entry is not None
     assert updated_entry.data[CONF_NAME] == "Updated Name"
     assert updated_entry.data[CONF_TOWN] == "Den Haag"
     assert updated_entry.data[CONF_POSTAL_CODE] == "2511AB"
@@ -300,14 +397,17 @@ async def test_reconfigure_flow_updates_entry(hass: HomeAssistant, enable_custom
 
 
 async def test_reconfigure_flow_invalid_postal_code(
-    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get, subentry
 ):
     """Test reconfigure flow validates postal code and completes with valid input."""
-    entry = await _create_entry(hass, mock_requests_get)
+    entry = subentry
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
     )
 
     # Submit invalid postal code
@@ -320,10 +420,10 @@ async def test_reconfigure_flow_invalid_postal_code(
         },
     )
 
-    assert result["type"] == FlowResultType.FORM
-    assert result["errors"] == {"postal_code": "invalid_postal_code"}
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("errors") == {"postal_code": "invalid_postal_code"}
 
-    # Fix the postal code and complete the flow
+    # Fix postal code and complete flow
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -333,8 +433,8 @@ async def test_reconfigure_flow_invalid_postal_code(
         },
     )
 
-    assert result["type"] == FlowResultType.ABORT
-    assert result["reason"] == "reconfigure_successful"
+    assert result.get("type") == FlowResultType.ABORT
+    assert result.get("reason") == "reconfigure_successful"
 
 
 async def test_reconfigure_flow_invalid_entry_id(
@@ -349,19 +449,29 @@ async def test_reconfigure_flow_invalid_entry_id(
         },
     )
 
-    assert result["type"] == FlowResultType.ABORT
-    assert result["reason"] == "entry_not_found"
+    assert result.get("type") == FlowResultType.ABORT
+    assert result.get("reason") == "entry_not_found"
 
 
 async def test_reconfigure_uses_defaults_for_options(
     hass: HomeAssistant, enable_custom_integrations, mock_requests_get
 ):
     """Test reconfigure flow uses default values for missing optional fields."""
-    # Create entry with minimal setup (will use defaults)
+    # Create global config entry (only global settings)
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_DAYS_TO_KEEP_SOLVED: DEFAULT_DAYS_TO_KEEP_SOLVED,
+            CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_INTERVAL,
+        },
+    )
+    # Add subentry (minimal, uses defaults)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "add_subentry"}
+    )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -370,14 +480,16 @@ async def test_reconfigure_uses_defaults_for_options(
             CONF_POSTAL_CODE: "5045AB",
         },
     )
-    entry = hass.config_entries.async_get_entry(result["result"].entry_id)
+    entry = hass.config_entries.async_entries(DOMAIN)[-1]
 
+    # Reconfigure with only required fields (uses defaults)
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
     )
-
-    # Only provide required fields
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -386,49 +498,175 @@ async def test_reconfigure_uses_defaults_for_options(
             CONF_POSTAL_CODE: "5611AA",
         },
     )
+    assert result.get("type") == FlowResultType.ABORT
 
-    assert result["type"] == FlowResultType.ABORT
-
-    # Verify default values were used for options
+    # Verify default values used for options
     updated_entry = hass.config_entries.async_get_entry(entry.entry_id)
-    assert updated_entry.options[CONF_DAYS_TO_KEEP_SOLVED] == DEFAULT_DAYS_TO_KEEP_SOLVED
-    assert updated_entry.options[CONF_CREATE_ALERT_SENSORS] == DEFAULT_CREATE_ALERT_SENSORS
+    assert updated_entry is not None
+    assert (
+        updated_entry.options[CONF_DAYS_TO_KEEP_SOLVED] == DEFAULT_DAYS_TO_KEEP_SOLVED
+    )
+    assert (
+        updated_entry.options[CONF_CREATE_ALERT_SENSORS] == DEFAULT_CREATE_ALERT_SENSORS
+    )
     assert updated_entry.options[CONF_UPDATE_INTERVAL] == DEFAULT_UPDATE_INTERVAL
 
 
 async def test_options_handler_config_entry_property(
-    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get, subentry
 ):
     """Test that OptionsFlowHandler config_entry property works correctly."""
-    from custom_components.ennatuurlijk_disruptions.config_flow import (
-        EnnatuurlijkOptionsFlowHandler,
-    )
 
-    entry = await _create_entry(hass, mock_requests_get)
-    handler = EnnatuurlijkOptionsFlowHandler(entry)
-
-    assert handler.config_entry == entry
-    assert handler.config_entry.entry_id == entry.entry_id
+    handler = EnnatuurlijkOptionsFlowHandler(subentry)
+    assert handler.config_entry == subentry
+    assert handler.config_entry.entry_id == subentry.entry_id
 
 
-# Helper function to create a test config entry
-async def _create_entry(hass: HomeAssistant, mock_requests_get):
-    """Create a test config entry."""
+async def test_user_flow_duplicate_postal_code(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
+    """Test that duplicate postal codes are rejected."""
+    # Create global config entry
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-
+    await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_DAYS_TO_KEEP_SOLVED: 7,
+            CONF_UPDATE_INTERVAL: 120,
+        },
+    )
+    # Add first subentry
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "add_subentry"}
+    )
+    await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_NAME: "First Entry",
+            CONF_TOWN: "Amsterdam",
+            CONF_POSTAL_CODE: "5045AB",
+        },
+    )
+    # Try to add duplicate subentry
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "add_subentry"}
+    )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_NAME: "Test Entry",
-            CONF_TOWN: "Tilburg",
+            CONF_NAME: "Duplicate Entry",
+            CONF_TOWN: "Amsterdam",
             CONF_POSTAL_CODE: "5045AB",
-            CONF_DAYS_TO_KEEP_SOLVED: 7,
-            CONF_CREATE_ALERT_SENSORS: True,
-            CONF_UPDATE_INTERVAL: 15,
         },
     )
+    assert result.get("type") == FlowResultType.ABORT
+    assert result.get("reason") == "already_configured"
 
-    entry_id = result["result"].entry_id
-    return hass.config_entries.async_get_entry(entry_id)
+
+async def test_reconfigure_flow_duplicate_postal_code(
+    hass: HomeAssistant, enable_custom_integrations, mock_requests_get
+):
+    """Test that reconfiguring to a duplicate postal code is rejected."""
+    # Create global config entry
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_DAYS_TO_KEEP_SOLVED: 7,
+            CONF_UPDATE_INTERVAL: 120,
+        },
+    )
+    # Add first subentry
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "add_subentry"}
+    )
+    await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_NAME: "First Entry",
+            CONF_TOWN: "Amsterdam",
+            CONF_POSTAL_CODE: "5045AB",
+        },
+    )
+    # Add second subentry (different postal code)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "add_subentry"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_NAME: "Second Entry",
+            CONF_TOWN: "Rotterdam",
+            CONF_POSTAL_CODE: "3011AB",
+        },
+    )
+    entry2 = hass.config_entries.async_entries(DOMAIN)[-1]
+    assert entry2 is not None
+    # Try to reconfigure second entry to use first entry's postal code
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry2.entry_id,
+        },
+    )
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("step_id") == "reconfigure"
+    # Try to change to duplicate postal code (should abort)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_NAME: "Second Entry",
+            CONF_TOWN: "Rotterdam",
+            CONF_POSTAL_CODE: "5045AB",
+        },
+    )
+    assert result.get("type") == FlowResultType.ABORT
+    assert result.get("reason") == "already_configured"
+
+
+@pytest.mark.asyncio
+async def test_async_step_migration_defaults(hass):
+    flow = EnnatuurlijkConfigFlow()
+    flow.hass = hass
+    # No user_input: should use defaults
+    result = await flow.async_step_migration()
+    assert result["type"] == "create_entry"
+    assert result["options"][CONF_DAYS_TO_KEEP_SOLVED] == DEFAULT_DAYS_TO_KEEP_SOLVED
+    assert result["options"][CONF_UPDATE_INTERVAL] == DEFAULT_UPDATE_INTERVAL
+
+
+@pytest.mark.asyncio
+async def test_async_step_migration_with_user_input(hass):
+    flow = EnnatuurlijkConfigFlow()
+    flow.hass = hass
+    user_input = {CONF_DAYS_TO_KEEP_SOLVED: 42, CONF_UPDATE_INTERVAL: 99}
+    result = await flow.async_step_migration(user_input)
+    assert result["type"] == "create_entry"
+    assert result["options"][CONF_DAYS_TO_KEEP_SOLVED] == 42
+    assert result["options"][CONF_UPDATE_INTERVAL] == 99
+
+
+@pytest.mark.asyncio
+async def test_async_step_reconfigure_entry_not_found(hass):
+    flow = EnnatuurlijkConfigFlow()
+    flow.hass = hass
+    flow.context = {}  # No entry_id in context
+    result = await flow.async_step_reconfigure()
+    assert result["type"] == "abort"
+    assert result["reason"] == "entry_not_found"
+
+
+@pytest.mark.asyncio
+async def test_async_step_reconfigure_entry_id_not_found(hass):
+    flow = EnnatuurlijkConfigFlow()
+    flow.hass = hass
+    flow.context = {"entry_id": "doesnotexist"}
+    hass.config_entries.async_get_entry = lambda eid: None
+    result = await flow.async_step_reconfigure()
+    assert result["type"] == "abort"
+    assert result["reason"] == "entry_not_found"

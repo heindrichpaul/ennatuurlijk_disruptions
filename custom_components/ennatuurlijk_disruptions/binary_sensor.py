@@ -1,0 +1,73 @@
+"""Binary sensor platform for Ennatuurlijk Disruptions."""
+
+from __future__ import annotations
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+from .const import (
+    CONF_CREATE_ALERT_SENSORS,
+    DEFAULT_CREATE_ALERT_SENSORS,
+)
+from .entity import EnnatuurlijkBinarySensor
+from .binary_sensor_types import BINARY_SENSOR_TYPES
+
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Set up Ennatuurlijk Disruptions binary sensors from a config entry."""
+    _LOGGER.info(
+        "Setting up Ennatuurlijk Disruptions binary sensors for entry: %s",
+        entry.entry_id,
+    )
+
+    # Get coordinators from runtime_data
+    coordinators = entry.runtime_data
+    
+    _LOGGER.debug(
+        "Found %d coordinators for binary sensors, entry %s: %s", 
+        len(coordinators), 
+        entry.entry_id,
+        list(coordinators.keys())
+    )
+
+    if not coordinators:
+        _LOGGER.info("No location subentries found, no binary sensors to create for entry: %s", entry.entry_id)
+        return
+
+    for subentry_id, coordinator in coordinators.items():
+        # Get the subentry object
+        subentry = entry.subentries[subentry_id]
+
+        # Check if alert sensors are enabled (get from main entry options)
+        create_alert_sensors = entry.options.get(
+            CONF_CREATE_ALERT_SENSORS,
+            entry.data.get(CONF_CREATE_ALERT_SENSORS, DEFAULT_CREATE_ALERT_SENSORS),
+        )
+
+        if not create_alert_sensors:
+            _LOGGER.info("Alert sensors disabled for subentry: %s", subentry_id)
+            continue
+
+        _LOGGER.info("Creating binary sensors for subentry %s (%s)", subentry_id, subentry.data.get("town", "Unknown"))
+
+        # Create binary sensors for this subentry
+        sensors = [
+            EnnatuurlijkBinarySensor(coordinator, subentry, description)
+            for description in BINARY_SENSOR_TYPES
+        ]
+
+        _LOGGER.info("Adding %d binary sensors for subentry %s", len(sensors), subentry_id)
+
+        # Add entities with proper subentry association (following NS pattern)
+        async_add_entities(sensors, config_subentry_id=subentry_id)
+
+    _LOGGER.info("Binary sensor setup completed for entry: %s", entry.entry_id)

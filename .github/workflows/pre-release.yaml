@@ -1,17 +1,20 @@
-name: Create Release
+name: Create Pre-release
 
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-    if: startsWith(github.event.head_commit.message, 'RELEASE')
+    if: startsWith(github.event.head_commit.message, 'PRERELEASE')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Fetch all tags
+        run: git fetch --tags
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -58,6 +61,20 @@ jobs:
           VERSION=$(jq -r .version custom_components/ennatuurlijk_disruptions/manifest.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Determine next beta tag
+        id: next_beta_tag
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TAG_PREFIX="$VERSION"b
+          LAST_BETA=$(git tag --list "${TAG_PREFIX}*" | sed -E "s/${TAG_PREFIX}([0-9]+)/\\1/" | sort -n | tail -1)
+          if [ -z "$LAST_BETA" ]; then
+            NEXT_BETA=1
+          else
+            NEXT_BETA=$((LAST_BETA + 1))
+          fi
+          NEXT_TAG="${TAG_PREFIX}${NEXT_BETA}"
+          echo "next_tag=$NEXT_TAG" >> $GITHUB_OUTPUT
+
       - name: Create HACS-style zip archive
         run: |
           cd custom_components/ennatuurlijk_disruptions
@@ -67,16 +84,17 @@ jobs:
       - name: Read release notes
         id: notes
         run: |
-          RELEASE_NOTES=$(awk '/^## v${{ steps.get_version.outputs.version }} Release Notes/,/^## v/{if (!/^## v/ || NR==1) print}' RELEASE_NOTES.md | sed '/^## v[0-9]/d')
+          RELEASE_NOTES=$(awk '/^## v${{ steps.next_beta_tag.outputs.next_tag }} Release Notes/,/^## v/{if (!/^## v/ || NR==1) print}' RELEASE_NOTES.md | sed '/^## v[0-9]/d')
           echo "release_notes<<EOF" >> $GITHUB_OUTPUT
           echo "$RELEASE_NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release
+      - name: Create GitHub Pre-Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          name: Release v${{ steps.get_version.outputs.version }}
+          tag_name: ${{ steps.next_beta_tag.outputs.next_tag }}
+          name: Pre-release ${{ steps.next_beta_tag.outputs.next_tag }}
+          prerelease: true
           body: ${{ steps.notes.outputs.release_notes }}
           files: ennatuurlijk_disruptions.zip
         env:

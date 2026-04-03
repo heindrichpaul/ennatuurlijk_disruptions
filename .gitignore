@@ -44,6 +44,7 @@ node_modules/
 # Test/coverage
 .coverage
 htmlcov/
+coverage.xml
 
 # GitHub Actions
 .github/workflows/*.log

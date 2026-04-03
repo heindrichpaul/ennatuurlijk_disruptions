@@ -1,14 +1,11 @@
-"""Pytest fixtures for Ennatuurlijk Disruptions integration tests.
-
-Mirrors Home Assistant core patterns (see Nederlandse Spoorwegen tests) using
-MockConfigEntry and patching network-facing layers.
-"""
 from __future__ import annotations
+
+import types
 from collections.abc import Generator
 from unittest.mock import AsyncMock, patch
+import os
 
 import pytest
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry  # type: ignore
 
 from custom_components.ennatuurlijk_disruptions.const import (
@@ -17,8 +14,25 @@ from custom_components.ennatuurlijk_disruptions.const import (
     CONF_POSTAL_CODE,
 )
 
+"""Pytest fixtures for Ennatuurlijk Disruptions integration tests.
+
+Mirrors Home Assistant core patterns (see Nederlandse Spoorwegen tests) using
+MockConfigEntry and patching network-facing layers.
+"""
+
 # Enable pytest-homeassistant-custom-component fixtures like `hass`
 pytest_plugins = "pytest_homeassistant_custom_component"
+
+
+@pytest.fixture
+def mock_global_config_entry():
+    """Provide a mock global config entry for the integration."""
+    entry = types.SimpleNamespace()
+    entry.options = {"days_to_keep_solved": 7, "update_interval": 120}
+    entry.data = {"days_to_keep_solved": 7, "update_interval": 120}
+    entry.runtime_data = {}  # Add empty runtime_data for calendar compatibility
+    return entry
+
 
 @pytest.fixture
 def mock_config_entry() -> MockConfigEntry:
@@ -51,44 +65,50 @@ def mockEntry() -> MockConfigEntry:
 @pytest.fixture
 def load_fixture():
     """Load a fixture file."""
+
     def _load_fixture(filename: str) -> str:
         """Load fixture data from file."""
-        import os
         path = os.path.join(os.path.dirname(__file__), "fixtures", filename)
         with open(path, encoding="utf-8") as file:
             return file.read()
+
     return _load_fixture
 
 
 @pytest.fixture
 async def mock_aiohttp_session(load_fixture):
     """Mock aiohttp client session to return the HTML fixture."""
+
     class MockResponse:
         """Mock aiohttp response."""
+
         def __init__(self, text: str, status: int = 200):
             self._text = text
             self.status = status
-            
+
         async def text(self):
             return self._text
-            
+
         async def __aenter__(self):
             return self
-            
+
         async def __aexit__(self, exc_type, exc_val, exc_tb):
             pass
-            
+
         def raise_for_status(self):
             if self.status >= 400:
                 raise Exception(f"HTTP {self.status}")
-    
+
     class MockSession:
         """Mock aiohttp session."""
+
         def get(self, url, **kwargs):
             html = load_fixture("ennatuurlijk_storingen.html")
             return MockResponse(html)
-    
-    with patch("homeassistant.helpers.aiohttp_client.async_get_clientsession") as mock_get_session:
+
+    with patch(
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession"
+    ) as mock_get_session:
         mock_get_session.return_value = MockSession()
         yield mock_get_session
 
@@ -106,14 +126,33 @@ def mock_async_update_data() -> Generator[AsyncMock, None, None]:
         "custom_components.ennatuurlijk_disruptions.coordinator.fetch_disruption_section",
         autospec=True,
     ) as mock:
+
         async def mock_fetch(hass, section, town, postal_code):
             if section == "planned":
-                return {"state": True, "dates": [{"description": "Planned Tilburg", "date": "30-10-2025", "link": "https://ennatuurlijk.nl/storingen/108227"}]}
+                return {
+                    "state": True,
+                    "dates": [
+                        {
+                            "description": "Planned Tilburg",
+                            "date": "30-10-2025",
+                            "link": "https://ennatuurlijk.nl/storingen/108227",
+                        }
+                    ],
+                }
             elif section == "solved":
-                return {"state": True, "dates": [{"description": "Solved Breda", "date": "29-10-2025", "link": "https://ennatuurlijk.nl/storingen/108219"}]}
+                return {
+                    "state": True,
+                    "dates": [
+                        {
+                            "description": "Solved Breda",
+                            "date": "29-10-2025",
+                            "link": "https://ennatuurlijk.nl/storingen/108219",
+                        }
+                    ],
+                }
             else:
                 return {"state": False, "dates": []}
-        
+
         mock.side_effect = mock_fetch
         yield mock
 
