@@ -5,10 +5,8 @@ from homeassistant import config_entries  # type: ignore
 from homeassistant.const import CONF_NAME  # type: ignore
 from homeassistant.config_entries import (
     ConfigFlow,
-    ConfigSubentryFlow,
-    SubentryFlowResult,
 )
-from homeassistant.core import callback
+
 from .const import (
     DOMAIN,
     CONF_TOWN,
@@ -200,12 +198,6 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    @classmethod
-    @callback
-    def async_get_supported_subentry_types(cls, config_entry):
-        """Return subentries supported by this integration."""
-        return {"location": LocationSubentryFlowHandler}
-
     async def async_step_reconfigure(self, user_input=None):
         _LOGGER.debug(
             "Starting async_step_reconfigure with input: %s, context: %s",
@@ -309,54 +301,3 @@ class EnnatuurlijkConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     def async_get_options_flow(config_entry):
         return EnnatuurlijkOptionsFlowHandler(config_entry)
-
-
-class LocationSubentryFlowHandler(ConfigSubentryFlow):
-    """Handle subentry flow for adding and modifying locations."""
-
-    def _is_duplicate_postal_code(self, postal_code: str) -> bool:
-        """Check if a subentry with this postal code already exists."""
-        main_entry = self._get_entry()
-        for subentry in main_entry.subentries.values():
-            if subentry.unique_id == postal_code:
-                return True
-        return False
-
-    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
-        """Add a new location subentry."""
-        errors = {}
-
-        if user_input is not None:
-            town = user_input[CONF_TOWN]
-            postal_code, is_valid = PostalCodeValidator.validate_and_normalize(
-                user_input[CONF_POSTAL_CODE]
-            )
-            name = user_input.get(CONF_NAME, f"Ennatuurlijk Disruptions {town}")
-
-            if not is_valid:
-                errors["postal_code"] = "invalid_postal_code"
-
-            if not errors and self._is_duplicate_postal_code(postal_code):
-                return self.async_abort(reason="already_configured")
-
-            if not errors:
-                return self.async_create_entry(
-                    title=f"{town} {postal_code}",
-                    data={
-                        CONF_NAME: name,
-                        CONF_TOWN: town,
-                        CONF_POSTAL_CODE: postal_code,
-                    },
-                )
-
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_NAME, default="Ennatuurlijk Disruptions"): str,
-                    vol.Required(CONF_TOWN): str,
-                    vol.Required(CONF_POSTAL_CODE): str,
-                }
-            ),
-            errors=errors,
-        )

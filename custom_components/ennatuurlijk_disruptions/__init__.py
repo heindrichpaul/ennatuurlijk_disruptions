@@ -86,12 +86,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.info("Setting up Ennatuurlijk Disruptions entry: %s (title: %s)", entry.entry_id, entry.title)
     _LOGGER.debug("Entry data: %s", entry.data)
     _LOGGER.debug("Entry options: %s", entry.options)
-    _LOGGER.debug("Entry subentries: %s", list(entry.subentries.keys()) if entry.subentries else "None")
+    subentries = getattr(entry, 'subentries', {})
+    _LOGGER.debug("Entry subentries: %s", list(subentries.keys()) if subentries else "None")
     
     coordinators: dict[str, object] = {}
 
     # Set up coordinators for all existing location subentries
-    for subentry_id, subentry in entry.subentries.items():
+    for subentry_id, subentry in subentries.items():
         _LOGGER.debug("Processing subentry %s: type=%s, data=%s", subentry_id, subentry.subentry_type, subentry.data)
         if subentry.subentry_type == "location":
             # Create coordinator from subentry, passing main entry for global settings

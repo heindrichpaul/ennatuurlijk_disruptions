@@ -5,7 +5,7 @@ from __future__ import annotations
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent  # type: ignore
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util  # type: ignore
 from datetime import datetime, timedelta
 import re
@@ -15,7 +15,7 @@ from .const import DOMAIN, _LOGGER
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
-    async_add_entities: AddConfigEntryEntitiesCallback,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Ennatuurlijk Disruptions Calendar from config entry."""
     # Only create calendar if this entry has subentries (coordinators)
