@@ -6,7 +6,7 @@ from homeassistant.const import CONF_NAME  # type: ignore
 from homeassistant.config_entries import (
     ConfigFlow,
 )
-from homeassistant.core import callback  # noqa: F401
+
 from .const import (
     DOMAIN,
     CONF_TOWN,
