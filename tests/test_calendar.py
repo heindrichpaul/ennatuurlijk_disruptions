@@ -1,5 +1,6 @@
 import pytest
 from datetime import date
+from freezegun import freeze_time
 from custom_components.ennatuurlijk_disruptions.calendar import (
     EnnatuurlijkDisruptionsCalendar,
 )
@@ -9,6 +10,7 @@ from custom_components.ennatuurlijk_disruptions.coordinator import (
 
 
 @pytest.fixture
+@freeze_time("2025-10-30")
 async def setup_calendar_env(
     hass, mockEntry, mock_global_config_entry, mock_aiohttp_session
 ):
