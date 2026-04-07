@@ -8,6 +8,8 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: startsWith(github.event.head_commit.message, 'PRERELEASE')
     steps:
       - name: Checkout code
@@ -92,10 +94,9 @@ jobs:
       - name: Create GitHub Pre-Release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.PAT }}
           tag_name: ${{ steps.next_beta_tag.outputs.next_tag }}
           name: Pre-release ${{ steps.next_beta_tag.outputs.next_tag }}
           prerelease: true
           body: ${{ steps.notes.outputs.release_notes }}
           files: ennatuurlijk_disruptions.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}

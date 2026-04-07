@@ -8,6 +8,8 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: startsWith(github.event.head_commit.message, 'RELEASE')
     steps:
       - name: Checkout code
@@ -75,9 +77,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.PAT }}
           tag_name: v${{ steps.get_version.outputs.version }}
           name: Release v${{ steps.get_version.outputs.version }}
           body: ${{ steps.notes.outputs.release_notes }}
           files: ennatuurlijk_disruptions.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
